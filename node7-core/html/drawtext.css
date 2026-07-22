@@ -1,0 +1,26 @@
+.drawtext {
+    position: absolute;
+    left: 2vw;
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 420px;
+    padding: 12px 16px;
+    background: rgba(10, 10, 10, 0.94);
+    border-left: 3px solid var(--gold);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.drawtext[data-position="right"] {
+    left: auto;
+    right: 2vw;
+}
+
+.drawtext[data-position="top"] {
+    left: 50%;
+    top: 5vh;
+    transform: translateX(-50%);
+}
+
+.drawtext.pressed {
+    border-color: var(--success);
+}

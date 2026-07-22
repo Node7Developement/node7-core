@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NODE7</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="drawtext.css">
+</head>
+<body>
+    <aside id="hud" class="hud hidden">
+        <div><small>CASH</small><strong id="cash">$0</strong></div>
+        <div><small>BANK</small><strong id="bank">$0</strong></div>
+        <div><small>GOLD</small><strong id="gold">0</strong></div>
+        <div><small>ROLE</small><strong id="job">UNEMPLOYED</strong></div>
+    </aside>
+
+    <div id="notifications" class="notifications"></div>
+
+    <div id="drawtext" class="drawtext hidden"></div>
+
+    <div id="progress" class="progress hidden">
+        <div class="progress-label" id="progress-label">Working...</div>
+        <div class="progress-track"><span id="progress-fill"></span></div>
+        <small id="progress-help"></small>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
