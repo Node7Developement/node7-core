@@ -1,6 +1,6 @@
 Node7Config = {}
 
-Node7Config.Version = '1.3.4'
+Node7Config.Version = '1.4.0'
 Node7Config.Locale = 'en'
 Node7Config.Debug = GetConvar('node7_environment', 'development') == 'development'
 Node7Config.ServerName = GetConvar('node7_serverName', 'NODE7 LABS')
@@ -59,8 +59,7 @@ Node7Config.Status = {
 
 Node7Config.UI = {
     accent = '#d4af37',
-    notifications = true,
-    hud = true
+    notifications = true
 }
 
 Node7Config.Security = {

@@ -135,6 +135,8 @@ function Node7.RefreshPlayerData(source, includeInventory)
     player.Functions.GetMetaData = function(key) return character.metadata[key] end
     player.Functions.SetAppearance = function(value) return Node7.SetAppearance(source, value) end
     player.Functions.Save = function() return Node7.SavePlayer(source) end
+    player.Functions.Logout = function() return Node7.UnloadPlayer(source) end
+    player.Functions.Unload = player.Functions.Logout
 
     TriggerClientEvent('node7:client:setPlayerData', source, player.PlayerData)
     TriggerClientEvent('Node7:Player:SetPlayerData', source, player.PlayerData)
@@ -196,6 +198,40 @@ function Node7.SavePlayer(source)
         player.character.position = { x = coords.x, y = coords.y, z = coords.z, w = GetEntityHeading(ped) }
     end
     Node7Database.SaveCharacter(player.character)
+    return true
+end
+
+function Node7.UnloadPlayer(source)
+    source = tonumber(source)
+    local player = source and Node7.Players[source]
+    if not player then return false, 'player_missing' end
+
+    if player.character then
+        local saved, result = pcall(Node7.SavePlayer, source)
+        if not saved or result == false then
+            return false, 'save_failed'
+        end
+    end
+
+    local oldCharacter = player.character
+    player.loaded = false
+    player.character = nil
+    player.PlayerData = nil
+
+    local state = Player(source)
+    if state and state.state then
+        state.state:set('node7Loaded', false, true)
+        state.state:set('node7CharacterId', 0, true)
+    end
+
+    TriggerClientEvent('node7:client:unloaded', source)
+    TriggerClientEvent('Node7:Client:OnPlayerUnload', source)
+
+    if Node7.Commands and Node7.Commands.Refresh then
+        Node7.Commands.Refresh(source)
+    end
+
+    TriggerEvent('node7:server:playerUnloaded', source, oldCharacter)
     return true
 end
 
@@ -314,6 +350,8 @@ AddEventHandler('playerDropped', function()
 end)
 
 exports('SavePlayer', Node7.SavePlayer)
+exports('UnloadPlayer', Node7.UnloadPlayer)
+exports('Logout', Node7.UnloadPlayer)
 exports('LoadCharacter', Node7.LoadCharacter)
 exports('RefreshPlayerData', Node7.RefreshPlayerData)
 exports('SetAppearance', Node7.SetAppearance)

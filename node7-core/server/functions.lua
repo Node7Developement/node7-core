@@ -140,3 +140,12 @@ exports('HasPermission', function(source, permission)
 end)
 
 exports('RegisterItem', Node7.RegisterItem)
+
+
+-- Character-session lifecycle used by standalone multicharacter resources.
+Node7.Logout = function(source)
+    return Node7.UnloadPlayer(source)
+end
+
+Node7.Unload = Node7.Logout
+Node7.UnloadPlayer = Node7.UnloadPlayer

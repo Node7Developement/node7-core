@@ -4,22 +4,15 @@ Node7Client.Cache = Node7Client.Cache or {
     coords = vector3(0.0, 0.0, 0.0)
 }
 
+-- Cache only what client resources commonly request. Unloaded sessions update
+-- less frequently, reducing idle native calls during character selection.
 CreateThread(function()
     while true do
+        local ped = PlayerPedId()
         Node7Client.Cache.playerId = PlayerId()
-        Node7Client.Cache.ped = PlayerPedId()
-        Node7Client.Cache.coords = GetEntityCoords(Node7Client.Cache.ped)
-        Wait(250)
-    end
-end)
+        Node7Client.Cache.ped = ped
+        Node7Client.Cache.coords = GetEntityCoords(ped)
 
-CreateThread(function()
-    while true do
-        if Node7Client.Loaded then
-            LocalPlayer.state:set('node7Loaded', true, false)
-            Wait(5000)
-        else
-            Wait(1000)
-        end
+        Wait(Node7Client.Loaded and 500 or 1500)
     end
 end)
