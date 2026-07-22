@@ -1,6 +1,6 @@
 # NODE7 Core
 
-NODE7 Core is a modular, server-authoritative RedM framework foundation. It includes account and character persistence, economy, inventory services, weapons, six configured jobs, five configured gangs, persistent horses and wagons, permissions, callbacks, notifications, progress bars, character services, notifications, progress bars, prompts, and draw text. Inventory presentation belongs in the separate `node7-inventory` resource.
+NODE7 Core is a modular, server-authoritative RedM framework foundation. It includes account and character persistence, economy, inventory services, weapons, six configured jobs, five configured gangs, persistent horses and wagons, permissions, callbacks, notifications, progress bars, a HUD, and character services. Inventory presentation belongs in the separate `node7-inventory` resource.
 
 Version 1.3.4 keeps player accounts, character persistence, character validation, loading, ownership, and appearance persistence inside NODE7 Core while leaving character presentation entirely to standalone resources such as `node7-multicharacter` and `node7-appearance`. Core does not display a full-screen startup overlay and forcibly closes legacy cached Core interfaces.
 
@@ -143,28 +143,3 @@ node7-core/
 ## Extending the registries
 
 Add items in `shared/items.lua`, weapons and ammunition in `shared/weapons.lua`, jobs in `shared/jobs.lua`, gangs in `shared/gangs.lua`, horse models in `shared/horse.lua`, and wagon models in `shared/vehicles.lua`. External resources can register items, jobs, gangs, usable items, and callbacks through the core API.
-
-
-## Version 1.4.0 UI policy
-
-NODE7 Core no longer contains or displays a cash, bank, gold, job, status, or
-top-right HUD. HUD presentation belongs to a separate optional resource.
-
-The Core NUI now contains only notifications, progress, prompts, and draw text.
-
-## Character unload API
-
-```lua
-local Core = exports['node7-core']:GetCoreObject()
-local Player = Core.Functions.GetPlayer(source)
-
-Player.Functions.Save()
-Player.Functions.Logout()
-```
-
-Server exports:
-
-```lua
-exports['node7-core']:UnloadPlayer(source)
-exports['node7-core']:Logout(source)
-```

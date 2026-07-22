@@ -1,10 +1,10 @@
-fx_version '1.4.0'
+fx_version '1.3.5'
 game 'rdr3'
 
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 
 author 'NODE7 LABS'
-description 'NODE7 optimized server-authoritative RedM framework core'
+description 'NODE7 QBR-style, server-authoritative RedM framework core'
 version '1.3.4'
 
 ui_page 'html/index.html'

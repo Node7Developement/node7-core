@@ -116,6 +116,7 @@ RegisterNetEvent('node7:client:loaded', function(data)
     Node7Client.CharacterData = data.character
     Node7Client.Loaded = true
     closeLegacyCoreUi()
+    nui('player', data)
 
     local position = data.character.position
     if position and position.x then
@@ -126,32 +127,26 @@ RegisterNetEvent('node7:client:loaded', function(data)
     Node7Client.Notify(Node7Translate('character_loaded'), 'success')
 end)
 
-RegisterNetEvent('node7:client:unloaded', function()
-    Node7Client.PlayerData = nil
-    Node7Client.CharacterData = nil
-    Node7Client.Loaded = false
-    Node7Client.Callbacks = {}
-    closeLegacyCoreUi()
-    TriggerEvent('Node7:Client:OnPlayerUnload')
-    TriggerEvent('node7:client:playerUnloaded')
-end)
-
 RegisterNetEvent('node7:client:moneyChanged', function(money)
     if Node7Client.PlayerData then Node7Client.PlayerData.money = money end
     if Node7Client.CharacterData then Node7Client.CharacterData.money = money end
+    nui('money', money)
 end)
 
 RegisterNetEvent('node7:client:jobChanged', function(job)
     if Node7Client.CharacterData then Node7Client.CharacterData.job = job end
+    nui('job', job)
 end)
 
 RegisterNetEvent('node7:client:gangChanged', function(gang)
     if Node7Client.CharacterData then Node7Client.CharacterData.gang = gang end
+    nui('gang', gang)
 end)
 
 RegisterNetEvent('node7:client:statusChanged', function(metadata)
     if Node7Client.PlayerData then Node7Client.PlayerData.metadata = metadata end
     if Node7Client.CharacterData then Node7Client.CharacterData.metadata = metadata end
+    nui('status', metadata)
 end)
 
 RegisterNetEvent('node7:client:heal', function(amount)

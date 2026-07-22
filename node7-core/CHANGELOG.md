@@ -1,17 +1,12 @@
 # Changelog
 
-## 1.4.0
+## 1.3.5
 
-- Removed the built-in top-right cash, bank, gold, and job HUD completely.
-- Removed HUD HTML, CSS, JavaScript, configuration, and NUI update traffic.
-- Kept notifications, progress bars, prompts, and draw text.
-- Added a proper server-side `UnloadPlayer`/`Logout` character lifecycle.
-- Added `Player.Functions.Logout` and `Player.Functions.Unload`.
-- Added `UnloadPlayer` and `Logout` server exports.
-- Added complete client state cleanup on character unload.
-- Removed repeated client state-bag writes.
-- Reduced idle client cache polling during character selection.
-- Preserved server-authoritative persistence and existing public APIs.
+- Removed the built-in top-right HUD only.
+- Replaced the Core NUI JavaScript with a syntax-safe HUD-free implementation.
+- Preserved notifications, progress bars, draw text, and pause handling.
+- Did not modify player loading, character lifecycle, spawning, saving,
+  state bags, callbacks, exports, server logic, or client loops.
 
 
 ## 1.3.4
