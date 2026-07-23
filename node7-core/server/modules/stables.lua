@@ -1,31 +1,49 @@
-local function loadedCharacter(source)
-    local player = Node7.GetPlayer(source)
-    return player and player.character and player or nil
+local function clone(value, seen)
+    if type(value) ~= 'table' then return value end
+    seen = seen or {}
+    if seen[value] then return seen[value] end
+    local copy = {}
+    seen[value] = copy
+    for key, entry in pairs(value) do copy[clone(key, seen)] = clone(entry, seen) end
+    return copy
 end
 
-local function decodeStableRows(rows)
-    for _, row in ipairs(rows) do
-        row.metadata = Node7Database.Decode(row.metadata, {})
-        if row.tack ~= nil then row.tack = Node7Database.Decode(row.tack, {}) end
-    end
-    return rows
+local function loadedCharacter(source)
+    local player = Node7.GetPlayer(source)
+    if not player or not player.character then return nil end
+    player.character.horses = type(player.character.horses) == 'table' and player.character.horses or {}
+    player.character.wagons = type(player.character.wagons) == 'table' and player.character.wagons or {}
+    return player
+end
+
+local function nextOwnedId(rows)
+    local highest = 0
+    for _, row in ipairs(rows or {}) do highest = math.max(highest, tonumber(row.id) or 0) end
+    return highest + 1
+end
+
+local function saveStables(source)
+    Node7.RefreshPlayerData(source, false, true)
+    Node7.MarkPlayerDirty(source)
 end
 
 function Node7.GetHorses(source)
     local player = loadedCharacter(source)
     if not player then return {} end
-    return decodeStableRows(MySQL.query.await([[
-        SELECT * FROM node7_horses WHERE character_id = ? ORDER BY active DESC, id ASC
-    ]], { player.character.id }) or {})
+    table.sort(player.character.horses, function(a, b)
+        if (a.active == true) ~= (b.active == true) then return a.active == true end
+        return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+    end)
+    return clone(player.character.horses)
 end
 
 function Node7.GetHorse(source, horseId)
     local player = loadedCharacter(source)
     if not player then return nil end
-    local row = MySQL.single.await('SELECT * FROM node7_horses WHERE id = ? AND character_id = ? LIMIT 1', {
-        tonumber(horseId), player.character.id
-    })
-    return row and decodeStableRows({ row })[1] or nil
+    horseId = tonumber(horseId)
+    for _, horse in ipairs(player.character.horses) do
+        if tonumber(horse.id) == horseId then return clone(horse) end
+    end
 end
 
 function Node7.CreateHorse(source, data)
@@ -36,39 +54,52 @@ function Node7.CreateHorse(source, data)
     if not definition then return false, 'invalid_horse_model' end
     if not name then return false, 'invalid_horse_name' end
 
-    local id = MySQL.insert.await([[
-        INSERT INTO node7_horses
-            (character_id, name, model, breed, gender, health, stamina, bonding, tack, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ]], {
-        player.character.id, name, definition.model, data.breed or definition.label, data.gender or 'unknown',
-        tonumber(data.health) or 100, tonumber(data.stamina) or 100, tonumber(data.bonding) or 0,
-        json.encode(data.tack or {}), json.encode(data.metadata or { modelKey = modelKey })
-    })
-    Node7.Log(player.character.id, 'horse_created', id, { name = name, model = definition.model })
-    if id then
-        Node7.AddItem(source, 'horse_deed', 1, { horseId = id, horseName = name, model = definition.model })
-    end
-    return id ~= nil, id
+    local horse = {
+        id = nextOwnedId(player.character.horses),
+        name = name,
+        model = definition.model,
+        breed = data.breed or definition.label,
+        gender = data.gender or 'unknown',
+        health = tonumber(data.health) or 100,
+        stamina = tonumber(data.stamina) or 100,
+        bonding = tonumber(data.bonding) or 0,
+        tack = type(data.tack) == 'table' and clone(data.tack) or {},
+        metadata = type(data.metadata) == 'table' and clone(data.metadata) or { modelKey = modelKey },
+        active = #player.character.horses == 0
+    }
+
+    player.character.horses[#player.character.horses + 1] = horse
+    Node7.AddItem(source, 'horse_deed', 1, { horseId = horse.id, horseName = name, model = definition.model })
+    Node7.Log(player.character.citizenid, 'horse_created', horse.id, { name = name, model = definition.model })
+    saveStables(source)
+    return true, horse.id
 end
 
 function Node7.DeleteHorse(source, horseId)
     local player = loadedCharacter(source)
-    if not player then return false end
-    local changed = MySQL.update.await('DELETE FROM node7_horses WHERE id = ? AND character_id = ?', {
-        tonumber(horseId), player.character.id
-    })
-    return changed and changed > 0
+    if not player then return false, 'player_not_loaded' end
+    horseId = tonumber(horseId)
+    for index, horse in ipairs(player.character.horses) do
+        if tonumber(horse.id) == horseId then
+            table.remove(player.character.horses, index)
+            saveStables(source)
+            return true
+        end
+    end
+    return false, 'horse_not_found'
 end
 
 function Node7.SetActiveHorse(source, horseId)
     local player = loadedCharacter(source)
-    if not player then return false end
-    local owned = Node7.GetHorse(source, horseId)
-    if not owned then return false end
-    MySQL.update.await('UPDATE node7_horses SET active = 0 WHERE character_id = ?', { player.character.id })
-    MySQL.update.await('UPDATE node7_horses SET active = 1 WHERE id = ?', { owned.id })
-    return true
+    if not player then return false, 'player_not_loaded' end
+    horseId = tonumber(horseId)
+    local found = false
+    for _, horse in ipairs(player.character.horses) do
+        horse.active = tonumber(horse.id) == horseId
+        if horse.active then found = true end
+    end
+    if found then saveStables(source) end
+    return found
 end
 
 function Node7.SpawnHorse(source, horseId)
@@ -76,9 +107,9 @@ function Node7.SpawnHorse(source, horseId)
     if #horses == 0 then return false, 'no_horses' end
     local horse
     if horseId then
-        for _, owned in ipairs(horses) do if owned.id == tonumber(horseId) then horse = owned break end end
+        for _, owned in ipairs(horses) do if tonumber(owned.id) == tonumber(horseId) then horse = owned break end end
     else
-        for _, owned in ipairs(horses) do if owned.active == 1 or owned.active == true then horse = owned break end end
+        for _, owned in ipairs(horses) do if owned.active == true or owned.active == 1 then horse = owned break end end
         horse = horse or horses[1]
     end
     if not horse then return false, 'horse_not_owned' end
@@ -90,18 +121,20 @@ end
 function Node7.GetWagons(source)
     local player = loadedCharacter(source)
     if not player then return {} end
-    return decodeStableRows(MySQL.query.await([[
-        SELECT * FROM node7_wagons WHERE character_id = ? ORDER BY active DESC, id ASC
-    ]], { player.character.id }) or {})
+    table.sort(player.character.wagons, function(a, b)
+        if (a.active == true) ~= (b.active == true) then return a.active == true end
+        return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+    end)
+    return clone(player.character.wagons)
 end
 
 function Node7.GetWagon(source, wagonId)
     local player = loadedCharacter(source)
     if not player then return nil end
-    local row = MySQL.single.await('SELECT * FROM node7_wagons WHERE id = ? AND character_id = ? LIMIT 1', {
-        tonumber(wagonId), player.character.id
-    })
-    return row and decodeStableRows({ row })[1] or nil
+    wagonId = tonumber(wagonId)
+    for _, wagon in ipairs(player.character.wagons) do
+        if tonumber(wagon.id) == wagonId then return clone(wagon) end
+    end
 end
 
 function Node7.CreateWagon(source, data)
@@ -112,37 +145,48 @@ function Node7.CreateWagon(source, data)
     if not definition then return false, 'invalid_wagon_model' end
     if not name then return false, 'invalid_wagon_name' end
 
-    local id = MySQL.insert.await([[
-        INSERT INTO node7_wagons (character_id, name, model, livery, condition_value, metadata)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ]], {
-        player.character.id, name, definition.model, tonumber(data.livery) or 0,
-        tonumber(data.condition) or 100, json.encode(data.metadata or { modelKey = modelKey })
-    })
-    Node7.Log(player.character.id, 'wagon_created', id, { name = name, model = definition.model })
-    if id then
-        Node7.AddItem(source, 'wagon_deed', 1, { wagonId = id, wagonName = name, model = definition.model })
-    end
-    return id ~= nil, id
+    local wagon = {
+        id = nextOwnedId(player.character.wagons),
+        name = name,
+        model = definition.model,
+        livery = tonumber(data.livery) or 0,
+        condition_value = tonumber(data.condition or data.condition_value) or 100,
+        metadata = type(data.metadata) == 'table' and clone(data.metadata) or { modelKey = modelKey },
+        active = #player.character.wagons == 0
+    }
+
+    player.character.wagons[#player.character.wagons + 1] = wagon
+    Node7.AddItem(source, 'wagon_deed', 1, { wagonId = wagon.id, wagonName = name, model = definition.model })
+    Node7.Log(player.character.citizenid, 'wagon_created', wagon.id, { name = name, model = definition.model })
+    saveStables(source)
+    return true, wagon.id
 end
 
 function Node7.DeleteWagon(source, wagonId)
     local player = loadedCharacter(source)
-    if not player then return false end
-    local changed = MySQL.update.await('DELETE FROM node7_wagons WHERE id = ? AND character_id = ?', {
-        tonumber(wagonId), player.character.id
-    })
-    return changed and changed > 0
+    if not player then return false, 'player_not_loaded' end
+    wagonId = tonumber(wagonId)
+    for index, wagon in ipairs(player.character.wagons) do
+        if tonumber(wagon.id) == wagonId then
+            table.remove(player.character.wagons, index)
+            saveStables(source)
+            return true
+        end
+    end
+    return false, 'wagon_not_found'
 end
 
 function Node7.SetActiveWagon(source, wagonId)
     local player = loadedCharacter(source)
-    if not player then return false end
-    local owned = Node7.GetWagon(source, wagonId)
-    if not owned then return false end
-    MySQL.update.await('UPDATE node7_wagons SET active = 0 WHERE character_id = ?', { player.character.id })
-    MySQL.update.await('UPDATE node7_wagons SET active = 1 WHERE id = ?', { owned.id })
-    return true
+    if not player then return false, 'player_not_loaded' end
+    wagonId = tonumber(wagonId)
+    local found = false
+    for _, wagon in ipairs(player.character.wagons) do
+        wagon.active = tonumber(wagon.id) == wagonId
+        if wagon.active then found = true end
+    end
+    if found then saveStables(source) end
+    return found
 end
 
 function Node7.SpawnWagon(source, wagonId)
@@ -150,9 +194,9 @@ function Node7.SpawnWagon(source, wagonId)
     if #wagons == 0 then return false, 'no_wagons' end
     local wagon
     if wagonId then
-        for _, owned in ipairs(wagons) do if owned.id == tonumber(wagonId) then wagon = owned break end end
+        for _, owned in ipairs(wagons) do if tonumber(owned.id) == tonumber(wagonId) then wagon = owned break end end
     else
-        for _, owned in ipairs(wagons) do if owned.active == 1 or owned.active == true then wagon = owned break end end
+        for _, owned in ipairs(wagons) do if owned.active == true or owned.active == 1 then wagon = owned break end end
         wagon = wagon or wagons[1]
     end
     if not wagon then return false, 'wagon_not_owned' end

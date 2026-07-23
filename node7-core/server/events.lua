@@ -1,9 +1,19 @@
 local function saveAll()
     for source in pairs(Node7.Players) do
         local ok, err = pcall(Node7.SavePlayer, source)
-        if not ok then print(('^1[NODE7]^7 Failed saving player %s: %s'):format(source, err)) end
+        if not ok then print(('^1[NODE7]^7 Failed saving player %s: %s'):format(source, tostring(err))) end
     end
 end
+
+CreateThread(function()
+    Wait(500)
+    Node7.Ready = true
+    print('^3============================================================^7')
+    print(('^3  %s^7'):format(Node7Config.ServerName))
+    print(('^3  NODE7 CORE v%s | RUNTIME ONLY^7'):format(Node7.Version))
+    print('^2  CORE READY | NO DATABASE OWNERSHIP^7')
+    print('^3============================================================^7')
+end)
 
 CreateThread(function()
     while true do
@@ -21,6 +31,7 @@ CreateThread(function()
                 metadata.hunger = math.max(0, (metadata.hunger or 100) - Node7Config.Status.hungerDrain)
                 metadata.thirst = math.max(0, (metadata.thirst or 100) - Node7Config.Status.thirstDrain)
                 TriggerClientEvent('node7:client:statusChanged', source, metadata)
+                Node7.MarkPlayerDirty(source)
             end
         end
     end
@@ -47,33 +58,4 @@ AddEventHandler('txAdmin:events:serverShuttingDown', saveAll)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then saveAll() end
-end)
-
-MySQL.ready(function()
-    local requiredTables = {
-        'node7_users', 'node7_characters', 'node7_inventories', 'node7_inventory_items',
-        'node7_weapons', 'node7_horses', 'node7_wagons', 'node7_organization_accounts',
-        'node7_transactions', 'node7_audit_logs'
-    }
-    local missing = {}
-    for _, tableName in ipairs(requiredTables) do
-        local exists = MySQL.scalar.await([[
-            SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema = DATABASE() AND table_name = ?
-        ]], { tableName })
-        if tonumber(exists) ~= 1 then missing[#missing + 1] = tableName end
-    end
-
-    if #missing > 0 then
-        print(('^1[NODE7]^7 Database schema is missing: %s'):format(table.concat(missing, ', ')))
-        print('^1[NODE7]^7 Import sql/node7_core.sql before using the framework.')
-        return
-    end
-
-    Node7.Ready = true
-    print('^3============================================================^7')
-    print(('^3  %s^7'):format(Node7Config.ServerName))
-    print(('^3  NODE7 CORE v%s | %s^7'):format(Node7.Version, GetConvar('node7_environment', 'development'):upper()))
-    print('^2  DATABASE CONNECTED | CORE READY^7')
-    print('^3============================================================^7')
 end)

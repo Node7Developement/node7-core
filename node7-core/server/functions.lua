@@ -8,6 +8,7 @@ Node7Core = {
     RateLimits = {},
     Shared = Node7Shared
 }
+
 Node7 = Node7Core
 Node7.Functions = Node7
 Node7.Player = {}
@@ -15,8 +16,24 @@ Node7.Commands = { List = {} }
 
 local function debugPrint(message)
     if Node7Config.Debug then
-        print(('^3[NODE7 DEBUG]^7 %s'):format(message))
+        print(('^3[NODE7 DEBUG]^7 %s'):format(tostring(message)))
     end
+end
+
+local function clone(value, seen)
+    if type(value) ~= 'table' then return value end
+    seen = seen or {}
+    if seen[value] then return seen[value] end
+    local copy = {}
+    seen[value] = copy
+    for key, entry in pairs(value) do
+        copy[clone(key, seen)] = clone(entry, seen)
+    end
+    return copy
+end
+
+function Node7.Clone(value)
+    return clone(value)
 end
 
 function Node7.Debug(message)
@@ -31,13 +48,18 @@ function Node7.GetPlayers()
     return Node7.Players
 end
 
-function Node7.GetPlayerByCharacterId(characterId)
-    characterId = tonumber(characterId)
+function Node7.GetPlayerByCitizenId(citizenid)
+    citizenid = tostring(citizenid or '')
+    if citizenid == '' then return nil end
     for _, player in pairs(Node7.Players) do
-        if player.character and player.character.id == characterId then
+        if player.PlayerData and tostring(player.PlayerData.citizenid) == citizenid then
             return player
         end
     end
+end
+
+function Node7.GetPlayerByCharacterId(characterId)
+    return Node7.GetPlayerByCitizenId(characterId)
 end
 
 function Node7.HasPermission(source, permission)
@@ -56,14 +78,11 @@ end
 function Node7.RegisterCallback(name, handler)
     assert(type(name) == 'string' and type(handler) == 'function', 'Invalid NODE7 callback registration')
     Node7.Callbacks[name] = handler
-    return true
 end
 
--- QBR-style alias for resources using Core.Functions.CreateCallback.
-Node7.CreateCallback = Node7.RegisterCallback
-
 function Node7.RegisterUsableItem(itemName, handler)
-    assert(Node7Items[itemName], ('Unknown NODE7 item: %s'):format(itemName))
+    assert(Node7Items[itemName], ('Unknown NODE7 item: %s'):format(tostring(itemName)))
+    assert(type(handler) == 'function', 'Invalid NODE7 usable item handler')
     Node7.UsableItems[itemName] = handler
 end
 
@@ -76,16 +95,30 @@ function Node7.RegisterItem(itemName, definition)
 end
 
 function Node7.Log(actor, action, target, data)
-    CreateThread(function()
-        Node7Database.Audit(actor, action, target, data)
-    end)
+    if not Node7Config.Debug then return end
+    print(('^3[NODE7 LOG]^7 actor=%s action=%s target=%s data=%s'):format(
+        tostring(actor or 'system'),
+        tostring(action or 'unknown'),
+        tostring(target or ''),
+        json.encode(data or {})
+    ))
 end
 
-function Node7.SanitizeText(value, maxLength)
-    if type(value) ~= 'string' then return nil end
-    value = value:gsub('[%c]', ''):match('^%s*(.-)%s*$')
-    if value == '' or #value > (maxLength or 64) then return nil end
+function Node7.SanitizeText(value, maxLength, allowEmpty)
+    if value == nil then return allowEmpty and '' or nil end
+    value = tostring(value):gsub('[%c]', ''):match('^%s*(.-)%s*$')
+    if (not allowEmpty and value == '') or #value > (maxLength or 64) then return nil end
     return value
+end
+
+function Node7.MarkPlayerDirty(source)
+    source = tonumber(source)
+    local player = source and Node7.Players[source]
+    if not player then return false end
+    player.dirty = true
+    player.lastChanged = os.time()
+    TriggerEvent('node7:server:externalPlayerDataChanged', source)
+    return true
 end
 
 local function rateAllowed(source)
@@ -118,7 +151,7 @@ RegisterNetEvent('node7:server:callback', function(requestId, name, ...)
 
     local ok, err = pcall(handler, source, respond, ...)
     if not ok then
-        print(('^1[NODE7]^7 Callback %s failed: %s'):format(name, err))
+        print(('^1[NODE7]^7 Callback %s failed: %s'):format(name, tostring(err)))
         TriggerClientEvent('node7:client:callback', source, requestId, false, 'server_error')
     end
 end)
@@ -127,16 +160,7 @@ AddEventHandler('playerDropped', function()
     Node7.RateLimits[source] = nil
 end)
 
-exports('GetCore', function()
-    return Node7
-end)
-
-exports('GetPlayer', function(source)
-    return Node7.GetPlayer(source)
-end)
-
-exports('HasPermission', function(source, permission)
-    return Node7.HasPermission(source, permission)
-end)
-
+exports('GetCore', function() return Node7 end)
+exports('GetPlayer', function(source) return Node7.GetPlayer(source) end)
+exports('HasPermission', function(source, permission) return Node7.HasPermission(source, permission) end)
 exports('RegisterItem', Node7.RegisterItem)

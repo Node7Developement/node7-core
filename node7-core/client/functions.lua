@@ -18,15 +18,6 @@ local function nui(action, data)
     SendNUIMessage({ action = action, data = data })
 end
 
--- Older NODE7 Core builds owned full-screen startup, character, and inventory
--- layers. Explicitly close them so a cached NUI document can never cover the
--- standalone multicharacter, appearance, or spawn resources.
-local function closeLegacyCoreUi()
-    nui('startup', false)
-    nui('characters:close')
-    nui('inventory:close')
-end
-
 function Node7Client.TriggerCallback(name, callback, ...)
     Node7Client.RequestId = Node7Client.RequestId + 1
     if Node7Client.RequestId > 1000000 then Node7Client.RequestId = 1 end
@@ -115,16 +106,28 @@ RegisterNetEvent('node7:client:loaded', function(data)
     Node7Client.PlayerData = data.PlayerData or data
     Node7Client.CharacterData = data.character
     Node7Client.Loaded = true
-    closeLegacyCoreUi()
+    SetNuiFocus(false, false)
+    nui('characters:close')
+    nui('startup', false)
     nui('player', data)
 
-    local position = data.character.position
+    local position = data.character and data.character.position
     if position and position.x then
         local ped = PlayerPedId()
         SetEntityCoords(ped, position.x + 0.0, position.y + 0.0, position.z + 0.0, false, false, false, false)
         SetEntityHeading(ped, (position.w or 0.0) + 0.0)
     end
     Node7Client.Notify(Node7Translate('character_loaded'), 'success')
+end)
+
+
+RegisterNetEvent('node7:client:unloaded', function()
+    Node7Client.PlayerData = nil
+    Node7Client.CharacterData = nil
+    Node7Client.Loaded = false
+    SetNuiFocus(false, false)
+    nui('startup', false)
+    nui('player', nil)
 end)
 
 RegisterNetEvent('node7:client:moneyChanged', function(money)
@@ -147,6 +150,10 @@ RegisterNetEvent('node7:client:statusChanged', function(metadata)
     if Node7Client.PlayerData then Node7Client.PlayerData.metadata = metadata end
     if Node7Client.CharacterData then Node7Client.CharacterData.metadata = metadata end
     nui('status', metadata)
+end)
+
+RegisterNetEvent('node7:client:inventoryChanged', function()
+    nui('inventory:dirty')
 end)
 
 RegisterNetEvent('node7:client:heal', function(amount)
@@ -252,6 +259,17 @@ RegisterNetEvent('node7:client:weaponAmmoChanged', function(weaponName, amount)
     SetPedAmmo(PlayerPedId(), joaat(weaponName), tonumber(amount) or 0)
 end)
 
+RegisterNUICallback('inventory:close', function(_, cb)
+    SetNuiFocus(false, false)
+    nui('inventory:close')
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('inventory:use', function(data, cb)
+    TriggerServerEvent('node7:server:useItem', data.itemName, tonumber(data.slot))
+    cb({ ok = true })
+end)
+
 RegisterNUICallback('progress:complete', function(data, cb)
     local progress = Node7Client.ActiveProgress
     Node7Client.ActiveProgress = nil
@@ -259,23 +277,20 @@ RegisterNUICallback('progress:complete', function(data, cb)
     cb({ ok = true })
 end)
 
-CreateThread(function()
-    closeLegacyCoreUi()
-    nui('theme', Node7Config.UI)
-    Wait(1000)
-    closeLegacyCoreUi()
-end)
+RegisterCommand('node7_inventory', function()
+    if not Node7Client.Loaded then return end
+    Node7Client.TriggerCallback('inventory:get', function(success, inventory)
+        if not success or not inventory then return end
+        SetNuiFocus(true, true)
+        nui('inventory', inventory)
+    end)
+end, false)
+
+RegisterKeyMapping('node7_inventory', 'Open NODE7 inventory', 'keyboard', 'I')
 
 CreateThread(function()
-    local pauseMenuVisible = false
-    while true do
-        local active = IsPauseMenuActive() == true
-        if active ~= pauseMenuVisible then
-            pauseMenuVisible = active
-            nui('pause', active)
-        end
-        Wait(active and 100 or 250)
-    end
+    nui('theme', Node7Config.UI)
+    nui('startup', false)
 end)
 
 CreateThread(function()

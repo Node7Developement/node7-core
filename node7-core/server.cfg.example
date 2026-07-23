@@ -1,57 +1,10 @@
-# NODE7 database
-set mysql_connection_string "mysql://root@127.0.0.1/node7_core?charset=utf8mb4"
+# NODE7 DEVELOPMENT STUDIOS | node7-core runtime-only example
 
-# NODE7 convars
-set node7_serverName "NODE7 LABS"
-set node7_environment "development"
+# Start node7-core before player persistence and multicharacter.
+# oxmysql is not a node7-core dependency; it is listed here only because
+# node7-players normally needs it.
 
-# Dependencies and core
 ensure oxmysql
 ensure node7-core
-
-# Permission hierarchy
-add_principal group.node7_owner group.node7_admin
-add_principal group.node7_admin group.node7_moderator
-
-add_ace group.node7_moderator node7.staff allow
-add_ace group.node7_moderator node7.moderator allow
-add_ace group.node7_moderator command.n7status allow
-
-add_ace group.node7_admin node7.admin allow
-add_ace group.node7_admin command.n7save allow
-add_ace group.node7_admin command.n7setmoney allow
-add_ace group.node7_admin command.n7givemoney allow
-add_ace group.node7_admin command.n7giveitem allow
-add_ace group.node7_admin command.n7removeitem allow
-add_ace group.node7_admin command.n7giveweapon allow
-add_ace group.node7_admin command.n7removeweapon allow
-add_ace group.node7_admin command.n7giveammo allow
-add_ace group.node7_admin command.n7removeammo allow
-add_ace group.node7_admin command.n7setjob allow
-add_ace group.node7_admin command.n7setgang allow
-add_ace group.node7_admin command.saveplayer allow
-add_ace group.node7_admin command.setmoney allow
-add_ace group.node7_admin command.givemoney allow
-add_ace group.node7_admin command.giveitem allow
-add_ace group.node7_admin command.removeitem allow
-add_ace group.node7_admin command.giveweapon allow
-add_ace group.node7_admin command.removeweapon allow
-add_ace group.node7_admin command.giveammo allow
-add_ace group.node7_admin command.removeammo allow
-add_ace group.node7_admin command.setjob allow
-add_ace group.node7_admin command.setgang allow
-add_ace group.node7_admin command.addhorse allow
-add_ace group.node7_admin command.deletehorse allow
-add_ace group.node7_admin command.addwagon allow
-add_ace group.node7_admin command.deletewagon allow
-add_ace group.node7_admin command.spawnhorse allow
-add_ace group.node7_admin command.spawnwagon allow
-add_ace group.node7_admin command.car allow
-
-add_ace group.node7_owner node7.owner allow
-add_ace group.node7_owner command allow
-add_ace group.node7_owner command.quit deny
-
-# Replace these with your owner identifiers
-add_principal identifier.fivem:19380766 group.node7_owner
-add_principal identifier.discord:1019014170458456074 group.node7_owner
+ensure node7-players
+ensure node7-multicharacter

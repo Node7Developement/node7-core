@@ -74,39 +74,8 @@ exports('GetDutyCount', function(jobName)
     return count
 end)
 
-local function normalizeCallableExport(first, second, third)
-    local name, handler = first, second
-
-    -- Some Cfx export call paths include the resource export proxy as the
-    -- first argument. Accept both proxy:name(handler) and name(handler).
-    if type(name) ~= 'string' and type(second) == 'string' then
-        name, handler = second, third
-    end
-
-    if type(handler) == 'function' then return name, handler end
-
-    -- Function references crossing a resource boundary may be represented as
-    -- callable values instead of a plain Lua function.
-    local metatable = handler ~= nil and getmetatable(handler) or nil
-    if metatable and type(metatable.__call) == 'function' then
-        local callable = handler
-        handler = function(...)
-            return callable(...)
-        end
-    end
-
-    return name, handler
-end
-
-exports('CreateCallback', function(first, second, third)
-    local name, handler = normalizeCallableExport(first, second, third)
-    return Node7.RegisterCallback(name, handler)
-end)
-
-exports('CreateUseableItem', function(first, second, third)
-    local itemName, handler = normalizeCallableExport(first, second, third)
-    return Node7.RegisterUsableItem(itemName, handler)
-end)
+exports('CreateCallback', Node7.RegisterCallback)
+exports('CreateUseableItem', Node7.RegisterUsableItem)
 exports('CanUseItem', function(itemName) return Node7.UsableItems[itemName] end)
 exports('GetPermissions', function(source)
     local permissions = {}
