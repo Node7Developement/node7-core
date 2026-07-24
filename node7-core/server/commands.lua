@@ -1,249 +1,355 @@
-local function respond(source, message, notificationType)
-    if source == 0 then
-        print(('^3[NODE7]^7 %s'):format(message))
+Node7Core.Commands = {}
+Node7Core.Commands.List = {}
+Node7Core.Commands.IgnoreList = { -- Ignore old perm levels while keeping backwards compatibility
+    ['god'] = true,            -- We don't need to create an ace because god is allowed all commands
+    ['user'] = true            -- We don't need to create an ace because builtin.everyone
+}
+
+CreateThread(function() -- Add ace to node for perm checking
+    local permissions = Node7Core.Config.Server.Permissions
+    for i = 1, #permissions do
+        local permission = permissions[i]
+        ExecuteCommand(('add_ace rsgcore.%s %s allow'):format(permission, permission))
+    end
+end)
+
+-- Register & Refresh Commands
+
+function Node7Core.Commands.Add(name, help, arguments, argsrequired, callback, permission, ...)
+    local restricted = true                                  -- Default to restricted for all commands
+    if not permission then permission = 'user' end           -- some commands don't pass permission level
+    if permission == 'user' then restricted = false end      -- allow all users to use command
+
+    RegisterCommand(name, function(source, args, rawCommand) -- Register command within fivem
+        if argsrequired and #args < #arguments then
+            return TriggerClientEvent('chat:addMessage', source, {
+                color = { 255, 0, 0 },
+                multiline = true,
+                args = { 'System', Lang:t('error.missing_args2') }
+            })
+        end
+        callback(source, args, rawCommand)
+    end, restricted)
+
+    local extraPerms = ... and table.pack(...) or nil
+    if extraPerms then
+        extraPerms[extraPerms.n + 1] = permission -- The `n` field is the number of arguments in the packed table
+        extraPerms.n += 1
+        permission = extraPerms
+        for i = 1, permission.n do
+            if not Node7Core.Commands.IgnoreList[permission[i]] then -- only create aces for extra perm levels
+                ExecuteCommand(('add_ace rsgcore.%s command.%s allow'):format(permission[i], name))
+            end
+        end
+        permission.n = nil
     else
-        Node7.Notify(source, message, notificationType or 'info')
+        permission = tostring(permission:lower())
+        if not Node7Core.Commands.IgnoreList[permission] then -- only create aces for extra perm levels
+            ExecuteCommand(('add_ace rsgcore.%s command.%s allow'):format(permission, name))
+        end
     end
-end
 
-function Node7.Commands.Add(name, help, arguments, argsRequired, callback, permission)
-    name = tostring(name):gsub('^/', ''):lower()
-    permission = permission or 'user'
-    Node7.Commands.List[name] = {
-        name = name,
-        help = help or '',
-        arguments = arguments or {},
-        argsRequired = argsRequired == true,
-        callback = callback,
-        permission = permission
+    Node7Core.Commands.List[name:lower()] = {
+        name = name:lower(),
+        permission = permission,
+        help = help,
+        arguments = arguments,
+        argsrequired = argsrequired,
+        callback = callback
     }
-    RegisterCommand(name, function(source, args, raw)
-        local ace = Node7Config.Permissions[permission] or permission
-        if permission ~= 'user' and not Node7.HasPermission(source, ace) then
-            Node7.Notify(source, Node7Translate('no_permission'), 'error')
-            return
-        end
-        if argsRequired and #args < #(arguments or {}) then
-            Node7.Notify(source, ('Usage: /%s'):format(name), 'error')
-            return
-        end
-        callback(source, args, raw)
-    end, false)
 end
 
-function Node7.Commands.Refresh(source)
-    for name, command in pairs(Node7.Commands.List) do
-        local ace = Node7Config.Permissions[command.permission] or command.permission
-        if command.permission == 'user' or Node7.HasPermission(source, ace) then
-            TriggerClientEvent('chat:addSuggestion', source, '/' .. name, command.help, command.arguments)
+function Node7Core.Commands.Refresh(source)
+    local src = source
+    local Player = Node7Core.Functions.GetPlayer(src)
+    local suggestions = {}
+    if Player then
+        for command, info in pairs(Node7Core.Commands.List) do
+            local hasPerm = IsPlayerAceAllowed(tostring(src), 'command.' .. command)
+            if hasPerm then
+                suggestions[#suggestions + 1] = {
+                    name = '/' .. command,
+                    help = info.help,
+                    params = info.arguments
+                }
+            else
+                TriggerClientEvent('chat:removeSuggestion', src, '/' .. command)
+            end
         end
+        TriggerClientEvent('chat:addSuggestions', src, suggestions)
     end
 end
 
-exports('AddCommand', Node7.Commands.Add)
-exports('RefreshCommands', Node7.Commands.Refresh)
-
-local function chat(source, message)
-    if source == 0 then print(('[NODE7] %s'):format(message)) return end
-    TriggerClientEvent('chat:addMessage', source, { color = { 212, 175, 55 }, args = { 'NODE7', message } })
-end
-
-local function targetPlayer(source, raw)
-    local target = tonumber(raw)
-    local player = target and Node7.GetPlayer(target)
-    if not player or not player.character then
-        respond(source, Node7Translate('player_missing'), 'error')
-        return nil
+-- Teleport
+Node7Core.Commands.Add('tp', Lang:t('command.tp.help'), { { name = Lang:t('command.tp.params.x.name'), help = Lang:t('command.tp.params.x.help') }, { name = Lang:t('command.tp.params.y.name'), help = Lang:t('command.tp.params.y.help') }, { name = Lang:t('command.tp.params.z.name'), help = Lang:t('command.tp.params.z.help') } }, false, function(source, args)
+    if args[1] and not args[2] and not args[3] then
+        if tonumber(args[1]) then
+            local target = GetPlayerPed(tonumber(args[1]))
+            if target ~= 0 then
+                local coords = GetEntityCoords(target)
+                TriggerClientEvent('Node7Core:Command:TeleportToPlayer', source, coords)
+            else
+                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+            end
+        else
+            local location = Node7Shared.Locations[args[1]]
+            if location then
+                TriggerClientEvent('Node7Core:Command:TeleportToCoords', source, location.x, location.y, location.z, location.w)
+            else
+                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.location_not_exist'), type = 'error', duration = 5000 })
+            end
+        end
+    else
+        if args[1] and args[2] and args[3] then
+            local x = tonumber((args[1]:gsub(',', ''))) + .0
+            local y = tonumber((args[2]:gsub(',', ''))) + .0
+            local z = tonumber((args[3]:gsub(',', ''))) + .0
+            if x ~= 0 and y ~= 0 and z ~= 0 then
+                TriggerClientEvent('Node7Core:Command:TeleportToCoords', source, x, y, z)
+            else
+                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.wrong_format'), type = 'error', duration = 5000 })
+            end
+        else
+            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.missing_args'), type = 'error', duration = 5000 })
+        end
     end
-    return target, player
-end
+end, 'admin')
 
-local function register(names, restricted, handler)
-    if type(names) == 'string' then names = { names } end
-    for _, name in ipairs(names) do RegisterCommand(name, handler, restricted) end
-end
+Node7Core.Commands.Add('tpm', Lang:t('command.tpm.help'), {}, false, function(source)
+    TriggerClientEvent('Node7Core:Command:GoToMarker', source)
+end, 'admin')
 
-local function decodeMetadata(args, firstIndex)
-    if not args[firstIndex] then return {} end
-    local raw = table.concat(args, ' ', firstIndex)
-    local ok, decoded = pcall(json.decode, raw)
-    if not ok or type(decoded) ~= 'table' then return nil, 'Metadata must be valid JSON.' end
-    return decoded
-end
+Node7Core.Commands.Add('togglepvp', Lang:t('command.togglepvp.help'), {}, false, function()
+    Node7Core.Config.Server.PVP = not Node7Core.Config.Server.PVP
+    TriggerClientEvent('Node7Core:Client:PvpHasToggled', -1, Node7Core.Config.Server.PVP)
+end, 'admin')
 
-register('n7status', true, function(source)
-    local loaded = 0
-    for _, player in pairs(Node7.Players) do if player.loaded then loaded = loaded + 1 end end
-    respond(source, ('NODE7 %s | %d connected | %d loaded'):format(Node7.Version, #GetPlayers(), loaded))
-end)
+-- admin noclip
+Node7Core.Commands.Add('noclip', Lang:t("command.noclip.help"), {}, false, function(source)
+    TriggerClientEvent('Node7Core:Command:ToggleNoClip', source)
+end, 'admin')
 
-register({ 'n7save', 'saveplayer' }, true, function(source, args)
-    local target = args[1] and targetPlayer(source, args[1]) or source
-    if target and Node7.SavePlayer(target) then respond(source, Node7Translate('saved'), 'success') end
-end)
+-- Permissions
 
-register({ 'n7setmoney', 'setmoney' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.SetMoney(target, args[2], args[3], ('admin:%s'):format(source))
-    respond(source, ok and 'Balance updated.' or 'Usage: /setmoney [id] [cash|bank|gold] [amount]', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('addpermission', Lang:t('command.addpermission.help'), { { name = Lang:t('command.addpermission.params.id.name'), help = Lang:t('command.addpermission.params.id.help') }, { name = Lang:t('command.addpermission.params.permission.name'), help = Lang:t('command.addpermission.params.permission.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    local permission = tostring(args[2]):lower()
+    if Player then
+        Node7Core.Functions.AddPermission(Player.PlayerData.source, permission)
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'god')
 
-register({ 'n7givemoney', 'givemoney' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.AddMoney(target, args[2], args[3], ('admin:%s'):format(source))
-    respond(source, ok and 'Money added.' or 'Usage: /givemoney [id] [cash|bank|gold] [amount]', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('removepermission', Lang:t('command.removepermission.help'), { { name = Lang:t('command.removepermission.params.id.name'), help = Lang:t('command.removepermission.params.id.help') }, { name = Lang:t('command.removepermission.params.permission.name'), help = Lang:t('command.removepermission.params.permission.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    local permission = tostring(args[2]):lower()
+    if Player then
+        Node7Core.Functions.RemovePermission(Player.PlayerData.source, permission)
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'god')
 
-register({ 'n7giveitem', 'giveitem' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local metadata, metadataError = decodeMetadata(args, 4)
-    if not metadata then respond(source, metadataError, 'error') return end
-    local ok, reason = Node7.AddItem(target, args[2], tonumber(args[3]) or 1, metadata)
-    respond(source, ok and 'Item added.' or ('Unable to add item: ' .. tostring(reason)), ok and 'success' or 'error')
-end)
+-- Open & Close Server
 
-register({ 'n7removeitem', 'removeitem' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok, reason = Node7.RemoveItem(target, args[2], tonumber(args[3]) or 1, tonumber(args[4]))
-    respond(source, ok and 'Item removed.' or ('Unable to remove item: ' .. tostring(reason)), ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('openserver', Lang:t('command.openserver.help'), {}, false, function(source)
+    if not Node7Core.Config.Server.Closed then
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.server_already_open'), type = 'error', duration = 5000 })
+        return
+    end
+    if Node7Core.Functions.HasPermission(source, 'admin') then
+        Node7Core.Config.Server.Closed = false
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.server_opened'), type = 'success', duration = 5000 })
+    else
+        Node7Core.Functions.Kick(source, Lang:t('error.no_permission'), nil, nil)
+    end
+end, 'admin')
 
-register({ 'n7giveweapon', 'giveweapon' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local metadata, metadataError = decodeMetadata(args, 4)
-    if not metadata then respond(source, metadataError, 'error') return end
-    local ok, serial = Node7.GiveWeapon(target, tostring(args[2] or ''):upper(), tonumber(args[3]) or 0, metadata)
-    respond(source, ok and ('Weapon added. Serial: %s'):format(serial) or 'Invalid weapon name.', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('closeserver', Lang:t('command.closeserver.help'), { { name = Lang:t('command.closeserver.params.reason.name'), help = Lang:t('command.closeserver.params.reason.help') } }, false, function(source, args)
+    if Node7Core.Config.Server.Closed then
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.server_already_closed'), type = 'error', duration = 5000 })
+        return
+    end
+    if Node7Core.Functions.HasPermission(source, 'admin') then
+        local reason = args[1] or 'No reason specified'
+        Node7Core.Config.Server.Closed = true
+        Node7Core.Config.Server.ClosedReason = reason
+        for k in pairs(Node7Core.Players) do
+            if not Node7Core.Functions.HasPermission(k, Node7Core.Config.Server.WhitelistPermission) then
+                Node7Core.Functions.Kick(k, reason, nil, nil)
+            end
+        end
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.server_closed'), type = 'success', duration = 5000 })
+    else
+        Node7Core.Functions.Kick(source, Lang:t('error.no_permission'), nil, nil)
+    end
+end, 'admin')
 
-register({ 'n7removeweapon', 'removeweapon' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.RemoveWeapon(target, args[2])
-    respond(source, ok and 'Weapon removed.' or 'Weapon serial not found.', ok and 'success' or 'error')
-end)
+-- Vehicle
 
-register({ 'n7giveammo', 'giveammo' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok, amount = Node7.AddAmmo(target, args[2], args[3])
-    respond(source, ok and ('Ammunition updated to %s.'):format(amount) or 'Weapon serial not found.', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('vehicle', Lang:t('command.car.help'), { { name = Lang:t('command.car.params.model.name'), help = Lang:t('command.car.params.model.help') } }, true, function(source, args)
+    TriggerClientEvent('Node7Core:Command:SpawnVehicle', source, args[1])
+end, 'admin')
 
-register({ 'n7removeammo', 'removeammo' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok, amount = Node7.RemoveAmmo(target, args[2], args[3])
-    respond(source, ok and ('Ammunition updated to %s.'):format(amount) or 'Weapon serial not found.', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('dv', Lang:t('command.dv.help'), {}, false, function(source)
+    TriggerClientEvent('Node7Core:Command:DeleteVehicle', source)
+end, 'admin')
 
-register({ 'n7setjob', 'setjob' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.SetJob(target, tostring(args[2] or ''):lower(), tonumber(args[3]) or 0)
-    respond(source, ok and 'Job updated.' or 'Invalid job or grade.', ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('dvall', Lang:t('command.dvall.help'), {}, false, function()
+    local vehicles = GetAllVehicles()
+    for _, vehicle in ipairs(vehicles) do
+        DeleteEntity(vehicle)
+    end
+end, 'admin')
 
-register({ 'n7setgang', 'setgang' }, true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.SetGang(target, tostring(args[2] or ''):lower(), tonumber(args[3]) or 0)
-    respond(source, ok and 'Gang updated.' or 'Invalid gang or grade.', ok and 'success' or 'error')
-end)
+-- Peds
 
-register('addhorse', true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local name = table.concat(args, ' ', 3)
-    local ok, id = Node7.CreateHorse(target, { model = args[2], name = name })
-    respond(source, ok and ('Horse added with ID %s.'):format(id) or ('Unable to add horse: ' .. tostring(id)), ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('dvp', Lang:t('command.dvp.help'), {}, false, function()
+    local peds = GetAllPeds()
+    for _, ped in ipairs(peds) do
+        DeleteEntity(ped)
+    end
+end, 'admin')
 
-register('deletehorse', true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.DeleteHorse(target, args[2])
-    respond(source, ok and 'Horse deleted.' or 'Horse not found.', ok and 'success' or 'error')
-end)
+-- Objects
 
-register('addwagon', true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local name = table.concat(args, ' ', 3)
-    local ok, id = Node7.CreateWagon(target, { model = args[2], name = name })
-    respond(source, ok and ('Wagon added with ID %s.'):format(id) or ('Unable to add wagon: ' .. tostring(id)), ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('dvo', Lang:t('command.dvo.help'), {}, false, function()
+    local objects = GetAllObjects()
+    for _, object in ipairs(objects) do
+        DeleteEntity(object)
+    end
+end, 'admin')
 
-register('deletewagon', true, function(source, args)
-    local target = targetPlayer(source, args[1])
-    if not target then return end
-    local ok = Node7.DeleteWagon(target, args[2])
-    respond(source, ok and 'Wagon deleted.' or 'Wagon not found.', ok and 'success' or 'error')
-end)
+-- Money
 
-register('spawnhorse', true, function(source, args)
-    if source == 0 then respond(source, 'Run this command in game.', 'error') return end
-    local ok, reason = Node7.AdminSpawnHorse(source, args[1])
-    respond(source, ok and 'Horse spawned.' or ('Unable to spawn horse: ' .. tostring(reason)), ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('givemoney', Lang:t('command.givemoney.help'), { { name = Lang:t('command.givemoney.params.id.name'), help = Lang:t('command.givemoney.params.id.help') }, { name = Lang:t('command.givemoney.params.moneytype.name'), help = Lang:t('command.givemoney.params.moneytype.help') }, { name = Lang:t('command.givemoney.params.amount.name'), help = Lang:t('command.givemoney.params.amount.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    if Player then
+        Player.Functions.AddMoney(tostring(args[2]), tonumber(args[3]), 'Admin give money')
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'admin')
 
-register({ 'spawnwagon', 'car' }, true, function(source, args)
-    if source == 0 then respond(source, 'Run this command in game.', 'error') return end
-    local ok, reason = Node7.AdminSpawnWagon(source, args[1])
-    respond(source, ok and 'Wagon spawned.' or ('Unable to spawn wagon: ' .. tostring(reason)), ok and 'success' or 'error')
-end)
+Node7Core.Commands.Add('setmoney', Lang:t('command.setmoney.help'), { { name = Lang:t('command.setmoney.params.id.name'), help = Lang:t('command.setmoney.params.id.help') }, { name = Lang:t('command.setmoney.params.moneytype.name'), help = Lang:t('command.setmoney.params.moneytype.help') }, { name = Lang:t('command.setmoney.params.amount.name'), help = Lang:t('command.setmoney.params.amount.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    if Player then
+        Player.Functions.SetMoney(tostring(args[2]), tonumber(args[3]))
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'admin')
 
-register({ 'horse', 'callhorse' }, false, function(source, args)
-    local ok, reason = Node7.SpawnHorse(source, tonumber(args[1]))
-    if not ok then respond(source, ('Unable to call horse: %s'):format(reason), 'error') end
-end)
+-- Job
 
-register('duty', false, function(source)
-    local player = Node7.GetPlayer(source)
-    if not player or not player.character then return end
-    local nextState = not player.character.job.duty
-    Node7.SetDuty(source, nextState)
-    respond(source, nextState and 'You are now on duty.' or 'You are now off duty.', nextState and 'success' or 'info')
-end)
+Node7Core.Commands.Add('job', Lang:t('command.job.help'), {}, false, function(source)
+    local PlayerJob = Node7Core.Functions.GetPlayer(source).PlayerData.job
+    TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('info.job_info', { value = PlayerJob.label, value2 = PlayerJob.grade.name, value3 = PlayerJob.onduty }), type = 'info', duration = 5000 })
+end, 'user')
 
-register({ 'wagon', 'callwagon' }, false, function(source, args)
-    local ok, reason = Node7.SpawnWagon(source, tonumber(args[1]))
-    if not ok then respond(source, ('Unable to call wagon: %s'):format(reason), 'error') end
-end)
+Node7Core.Commands.Add('setjob', Lang:t('command.setjob.help'), { { name = Lang:t('command.setjob.params.id.name'), help = Lang:t('command.setjob.params.id.help') }, { name = Lang:t('command.setjob.params.job.name'), help = Lang:t('command.setjob.params.job.help') }, { name = Lang:t('command.setjob.params.grade.name'), help = Lang:t('command.setjob.params.grade.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    if Player then
+        local job = tostring(args[2])
+        local grade = tonumber(args[3])
+        if not Node7Core.Shared.Jobs[job] then
+            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.job_not_exist'), type = 'error', duration = 5000 })
+            return
+        end
+        if GetResourceState('node7-multijob') == 'started' then
+            exports['node7-multijob']:AddJobToPlayer(Player.PlayerData.citizenid, job, grade)
+        end
+        Player.Functions.SetJob(job, grade)
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.job_set'), type = 'success', duration = 5000 })
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'admin')
 
-register('dismisshorse', false, function(source) TriggerClientEvent('node7:client:dismissHorse', source) end)
-register('dismisswagon', false, function(source) TriggerClientEvent('node7:client:dismissWagon', source) end)
+-- Gang
 
-register('myhorses', false, function(source)
-    local horses = Node7.GetHorses(source)
-    if #horses == 0 then chat(source, 'You do not own any horses.') return end
-    local values = {}
-    for _, horse in ipairs(horses) do values[#values + 1] = ('#%s %s (%s)'):format(horse.id, horse.name, horse.model) end
-    chat(source, table.concat(values, ' | '))
-end)
+Node7Core.Commands.Add('gang', Lang:t('command.gang.help'), {}, false, function(source)
+    local PlayerGang = Node7Core.Functions.GetPlayer(source).PlayerData.gang
+    TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('info.gang_info', { value = PlayerGang.label, value2 = PlayerGang.grade.name }), type = 'info', duration = 5000 })
+end, 'user')
 
-register('mywagons', false, function(source)
-    local wagons = Node7.GetWagons(source)
-    if #wagons == 0 then chat(source, 'You do not own any wagons.') return end
-    local values = {}
-    for _, wagon in ipairs(wagons) do values[#values + 1] = ('#%s %s (%s)'):format(wagon.id, wagon.name, wagon.model) end
-    chat(source, table.concat(values, ' | '))
-end)
+Node7Core.Commands.Add('setgang', Lang:t('command.setgang.help'), { { name = Lang:t('command.setgang.params.id.name'), help = Lang:t('command.setgang.params.id.help') }, { name = Lang:t('command.setgang.params.gang.name'), help = Lang:t('command.setgang.params.gang.help') }, { name = Lang:t('command.setgang.params.grade.name'), help = Lang:t('command.setgang.params.grade.help') } }, true, function(source, args)
+    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    if Player then
+        if Player.Functions.SetGang(tostring(args[2]), tonumber(args[3])) then
+            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.gang_set'), type = 'success', duration = 5000 })
+        else
+            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.gang_not_exist'), type = 'error', duration = 5000 })
+        end
+    else
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+    end
+end, 'admin')
 
-local function keysOf(registry)
-    local keys = {}
-    for key in pairs(registry) do keys[#keys + 1] = key end
-    table.sort(keys)
-    return keys
-end
+-- Out of Character Chat
+Node7Core.Commands.Add('ooc', Lang:t('command.ooc.help'), {}, false, function(source, args)
+    local message = table.concat(args, ' ')
+    local Players = Node7Core.Functions.GetPlayers()
+    local Player = Node7Core.Functions.GetPlayer(source)
+    local playerCoords = GetEntityCoords(GetPlayerPed(source))
+    for _, v in pairs(Players) do
+        if v == source then
+            TriggerClientEvent('chat:addMessage', v, {
+                color = Node7Core.Config.Commands.OOCColor,
+                multiline = true,
+                args = { 'OOC | ' .. GetPlayerName(source), message }
+            })
+        elseif #(playerCoords - GetEntityCoords(GetPlayerPed(v))) < 20.0 then
+            TriggerClientEvent('chat:addMessage', v, {
+                color = Node7Core.Config.Commands.OOCColor,
+                multiline = true,
+                args = { 'OOC | ' .. GetPlayerName(source), message }
+            })
+        elseif Node7Core.Functions.HasPermission(v, 'admin') then
+            if Node7Core.Functions.IsOptin(v) then
+                TriggerClientEvent('chat:addMessage', v, {
+                    color = Node7Core.Config.Commands.OOCColor,
+                    multiline = true,
+                    args = { 'Proximity OOC | ' .. GetPlayerName(source), message }
+                })
+                TriggerEvent('node7-log:server:CreateLog', 'ooc', 'OOC', 'white', '**' .. GetPlayerName(source) .. '** (CitizenID: ' .. Player.PlayerData.citizenid .. ' | ID: ' .. source .. ') **Message:** ' .. message, false)
+            end
+        end
+    end
+end, 'user')
 
-register('items', false, function(source) chat(source, table.concat(keysOf(Node7Items), ', ')) end)
-register('jobs', false, function(source) chat(source, table.concat(keysOf(Node7Jobs), ', ')) end)
-register('gangs', false, function(source) chat(source, table.concat(keysOf(Node7Gangs), ', ')) end)
-register('horsemodels', false, function(source) chat(source, table.concat(keysOf(Node7HorseModels), ', ')) end)
-register('wagonmodels', false, function(source) chat(source, table.concat(keysOf(Node7WagonModels), ', ')) end)
+-- Me command
+
+Node7Core.Commands.Add('me', Lang:t('command.me.help'), { { name = Lang:t('command.me.params.message.name'), help = Lang:t('command.me.params.message.help') } }, false, function(source, args)
+    if #args < 1 then
+        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.missing_args2'), type = 'error', duration = 5000 })
+        return
+    end
+    local ped = GetPlayerPed(source)
+    local pCoords = GetEntityCoords(ped)
+    local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
+    local Players = Node7Core.Functions.GetPlayers()
+    for i = 1, #Players do
+        local Player = Players[i]
+        local target = GetPlayerPed(Player)
+        local tCoords = GetEntityCoords(target)
+        if target == ped or #(pCoords - tCoords) < 20 then
+            TriggerClientEvent('Node7Core:Command:ShowMe3D', Player, source, msg)
+        end
+    end
+end, 'user')
+
+-- ids
+Node7Core.Commands.Add('id', 'Check Your ID #', {}, false, function(source)
+    local src = source
+    local Player = Node7Core.Functions.GetPlayer(src)
+    TriggerClientEvent('ox_lib:notify', source, {title = 'ID: '..source, type = 'info', duration = 5000 })
+end, 'user')
+
+Node7Core.Commands.Add('cid', 'Check Your Citizen ID #', {}, false, function(source)
+    local src = source
+    local Player = Node7Core.Functions.GetPlayer(src)
+    local Playercid = Player.PlayerData.citizenid
+    TriggerClientEvent('ox_lib:notify', source, {title = 'Citizen ID: '..Playercid, type = 'info', duration = 5000 })
+end, 'user')

@@ -1,45 +1,44 @@
-local function printTable(value, indent, visited)
+local function tPrint(tbl, indent)
     indent = indent or 0
-    visited = visited or {}
-    if type(value) ~= 'table' then
-        print(('%s%s'):format(string.rep('  ', indent), tostring(value)))
-        return
-    end
-    if visited[value] then
-        print(('%s<cycle>'):format(string.rep('  ', indent)))
-        return
-    end
-    visited[value] = true
-    for key, entry in pairs(value) do
-        local prefix = ('%s^3%s:^7'):format(string.rep('  ', indent), tostring(key))
-        if type(entry) == 'table' then
-            print(prefix)
-            printTable(entry, indent + 1, visited)
-        else
-            print(('%s %s'):format(prefix, tostring(entry)))
+    if type(tbl) == 'table' then
+        for k, v in pairs(tbl) do
+            local tblType = type(v)
+            local formatting = ('%s ^3%s:^0'):format(string.rep('  ', indent), k)
+
+            if tblType == 'table' then
+                print(formatting)
+                tPrint(v, indent + 1)
+            elseif tblType == 'boolean' then
+                print(('%s^1 %s ^0'):format(formatting, v))
+            elseif tblType == 'function' then
+                print(('%s^9 %s ^0'):format(formatting, v))
+            elseif tblType == 'number' then
+                print(('%s^5 %s ^0'):format(formatting, v))
+            elseif tblType == 'string' then
+                print(("%s ^2'%s' ^0"):format(formatting, v))
+            else
+                print(('%s^2 %s ^0'):format(formatting, v))
+            end
         end
+    else
+        print(('%s ^0%s'):format(string.rep('  ', indent), tbl))
     end
 end
 
-function Node7Debug(value, indent)
-    local resource = GetInvokingResource() or GetCurrentResourceName()
-    print(('^3[%s | NODE7 DEBUG]^7'):format(resource))
-    printTable(value, tonumber(indent) or 0)
-    print('^3[NODE7 DEBUG END]^7')
-end
-
-function Node7ShowError(resource, message)
-    print(('^1[%s | ERROR]^7 %s'):format(resource or 'NODE7', tostring(message)))
-end
-
-function Node7ShowSuccess(resource, message)
-    print(('^2[%s | SUCCESS]^7 %s'):format(resource or 'NODE7', tostring(message)))
-end
-
-RegisterNetEvent('node7:server:debug', function(value, indent)
-    Node7Debug(value, indent)
+RegisterServerEvent('Node7Core:DebugSomething', function(tbl, indent, resource)
+    print(('\x1b[4m\x1b[36m[ %s : DEBUG]\x1b[0m'):format(resource))
+    tPrint(tbl, indent)
+    print('\x1b[4m\x1b[36m[ END DEBUG ]\x1b[0m')
 end)
 
-exports('Debug', Node7Debug)
-exports('ShowError', Node7ShowError)
-exports('ShowSuccess', Node7ShowSuccess)
+function Node7Core.Debug(tbl, indent)
+    TriggerEvent('Node7Core:DebugSomething', tbl, indent, GetInvokingResource() or 'qb-core')
+end
+
+function Node7Core.ShowError(resource, msg)
+    print('\x1b[31m[' .. resource .. ':ERROR]\x1b[0m ' .. msg)
+end
+
+function Node7Core.ShowSuccess(resource, msg)
+    print('\x1b[32m[' .. resource .. ':LOG]\x1b[0m ' .. msg)
+end

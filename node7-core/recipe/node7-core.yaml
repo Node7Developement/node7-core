@@ -1,0 +1,16 @@
+name: node7-core
+version: 2.3.10-node7.1
+author: NODE7 Development Studios
+description: NODE7-core format NODE7 framework core with ox_lib and oxmysql support.
+
+resources:
+  - resource: ox_lib
+  - resource: oxmysql
+  - resource: node7-core
+
+sql:
+  - recipe/node7-core.sql
+
+config:
+  - recipe/permissions.cfg
+  - recipe/node7-core.cfg

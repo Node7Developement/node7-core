@@ -1,112 +1,79 @@
-Node7Shared.WeaponsByName = {
-    WEAPON_REVOLVER_CATTLEMAN = { label = 'Cattleman Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_CATTLEMAN_MEXICAN = { label = 'Steel Cattleman Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_DOUBLEACTION = { label = 'Double-Action Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_DOUBLEACTION_GAMBLER = { label = 'Gambler Double-Action Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_SCHOFIELD = { label = 'Schofield Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_LEMAT = { label = 'LeMat Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_REVOLVER_NAVY = { label = 'Navy Revolver', category = 'revolver', ammo = 'AMMO_REVOLVER' },
-    WEAPON_PISTOL_VOLCANIC = { label = 'Volcanic Pistol', category = 'pistol', ammo = 'AMMO_PISTOL' },
-    WEAPON_PISTOL_MAUSER = { label = 'Mauser Pistol', category = 'pistol', ammo = 'AMMO_PISTOL' },
-    WEAPON_PISTOL_SEMIAUTO = { label = 'Semi-Automatic Pistol', category = 'pistol', ammo = 'AMMO_PISTOL' },
-    WEAPON_PISTOL_M1899 = { label = 'M1899 Pistol', category = 'pistol', ammo = 'AMMO_PISTOL' },
-    WEAPON_REPEATER_CARBINE = { label = 'Carbine Repeater', category = 'repeater', ammo = 'AMMO_REPEATER' },
-    WEAPON_REPEATER_WINCHESTER = { label = 'Lancaster Repeater', category = 'repeater', ammo = 'AMMO_REPEATER' },
-    WEAPON_REPEATER_HENRY = { label = 'Litchfield Repeater', category = 'repeater', ammo = 'AMMO_REPEATER' },
-    WEAPON_REPEATER_EVANS = { label = 'Evans Repeater', category = 'repeater', ammo = 'AMMO_REPEATER' },
-    WEAPON_RIFLE_VARMINT = { label = 'Varmint Rifle', category = 'rifle', ammo = 'AMMO_22' },
-    WEAPON_RIFLE_SPRINGFIELD = { label = 'Springfield Rifle', category = 'rifle', ammo = 'AMMO_RIFLE' },
-    WEAPON_RIFLE_BOLTACTION = { label = 'Bolt-Action Rifle', category = 'rifle', ammo = 'AMMO_RIFLE' },
-    WEAPON_RIFLE_ELEPHANT = { label = 'Elephant Rifle', category = 'rifle', ammo = 'AMMO_RIFLE_ELEPHANT' },
-    WEAPON_SNIPERRIFLE_ROLLINGBLOCK = { label = 'Rolling Block Rifle', category = 'sniper', ammo = 'AMMO_RIFLE' },
-    WEAPON_SNIPERRIFLE_ROLLINGBLOCK_EXOTIC = { label = 'Rare Rolling Block Rifle', category = 'sniper', ammo = 'AMMO_RIFLE' },
-    WEAPON_SNIPERRIFLE_CARCANO = { label = 'Carcano Rifle', category = 'sniper', ammo = 'AMMO_RIFLE' },
-    WEAPON_SHOTGUN_DOUBLEBARREL = { label = 'Double-Barrel Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_SHOTGUN_DOUBLEBARREL_EXOTIC = { label = 'Rare Double-Barrel Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_SHOTGUN_PUMP = { label = 'Pump-Action Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_SHOTGUN_REPEATING = { label = 'Repeating Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_SHOTGUN_SEMIAUTO = { label = 'Semi-Automatic Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_SHOTGUN_SAWEDOFF = { label = 'Sawed-Off Shotgun', category = 'shotgun', ammo = 'AMMO_SHOTGUN' },
-    WEAPON_BOW = { label = 'Bow', category = 'bow', ammo = 'AMMO_ARROW' },
-    WEAPON_BOW_IMPROVED = { label = 'Improved Bow', category = 'bow', ammo = 'AMMO_ARROW' },
-    WEAPON_MELEE_KNIFE = { label = 'Knife', category = 'melee', ammo = nil },
-    WEAPON_MELEE_KNIFE_JAWBONE = { label = 'Jawbone Knife', category = 'melee', ammo = nil },
-    WEAPON_MELEE_HAMMER = { label = 'Hammer', category = 'melee', ammo = nil },
-    WEAPON_MELEE_HATCHET = { label = 'Hatchet', category = 'melee', ammo = nil },
-    WEAPON_THROWN_TOMAHAWK = { label = 'Tomahawk', category = 'throwable', ammo = 'AMMO_TOMAHAWK' },
-    WEAPON_THROWN_TOMAHAWK_ANCIENT = { label = 'Ancient Tomahawk', category = 'throwable', ammo = 'AMMO_TOMAHAWK' },
-    WEAPON_THROWN_THROWING_KNIVES = { label = 'Throwing Knife', category = 'throwable', ammo = 'AMMO_THROWING_KNIVES' },
-    WEAPON_THROWN_DYNAMITE = { label = 'Dynamite', category = 'throwable', ammo = 'AMMO_DYNAMITE' },
-    WEAPON_THROWN_MOLOTOV = { label = 'Fire Bottle', category = 'throwable', ammo = 'AMMO_MOLOTOV' },
-    WEAPON_THROWN_BOLAS = { label = 'Bolas', category = 'throwable', ammo = 'AMMO_BOLAS' },
-    WEAPON_MELEE_CLEAVER = { label = 'Cleaver', category = 'melee', ammo = nil },
-    WEAPON_LASSO = { label = 'Lasso', category = 'utility', ammo = nil },
-    WEAPON_LASSO_REINFORCED = { label = 'Reinforced Lasso', category = 'utility', ammo = nil },
-    WEAPON_FISHINGROD = { label = 'Fishing Rod', category = 'utility', ammo = nil },
-    WEAPON_KIT_CAMERA = { label = 'Camera', category = 'utility', ammo = nil },
-    WEAPON_MELEE_LANTERN = { label = 'Lantern', category = 'utility', ammo = nil },
-    WEAPON_MELEE_DAVY_LANTERN = { label = 'Davy Lantern', category = 'utility', ammo = nil },
-    WEAPON_MELEE_TORCH = { label = 'Torch', category = 'utility', ammo = nil },
-    WEAPON_MELEE_MACHETE = { label = 'Machete', category = 'melee', ammo = nil },
-    WEAPON_KIT_BINOCULARS = { label = 'Binoculars', category = 'utility', ammo = nil }
+Node7Shared = Node7Shared or {}
+Node7Shared.Weapons = {
+    -- revolver
+    [`weapon_revolver_cattleman`]              = { name = 'weapon_revolver_cattleman',              label = 'Cattleman Revolver',                 weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_cattleman_mexican`]      = { name = 'weapon_revolver_cattleman_mexican',      label = 'Cattleman Mexican Revolver',         weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_doubleaction`]           = { name = 'weapon_revolver_doubleaction',           label = 'Double Action Revolver',             weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_doubleaction_gambler`]   = { name = 'weapon_revolver_doubleaction_gambler',   label = 'Double Action Gambler Revolver',     weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_schofield`]              = { name = 'weapon_revolver_schofield',              label = 'Schofield Revolver',                 weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_lemat`]                  = { name = 'weapon_revolver_lemat',                  label = 'Lemat Revolver',                     weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_navy`]                   = { name = 'weapon_revolver_navy',                   label = 'Navy Revolver',                      weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    [`weapon_revolver_navy_crossover`]         = { name = 'weapon_revolver_navy_crossover',         label = 'Navy Crossover Revolver',            weapontype = 'Revolver',     ammotype = 'AMMO_REVOLVER', damagereason = 'Placeholder' },
+    -- pistol
+    [`weapon_pistol_volcanic`]                 = { name = 'weapon_pistol_volcanic',                 label = 'Volcanic Pistol',                    weapontype = 'Pistol',       ammotype = 'AMMO_PISTOL',   damagereason = 'Placeholder' },
+    [`weapon_pistol_m1899`]                    = { name = 'weapon_pistol_m1899',                    label = 'm1899 Pistol',                       weapontype = 'Pistol',       ammotype = 'AMMO_PISTOL',   damagereason = 'Placeholder' },
+    [`weapon_pistol_mauser`]                   = { name = 'weapon_pistol_mauser',                   label = 'Mauser Pistol',                      weapontype = 'Pistol',       ammotype = 'AMMO_PISTOL',   damagereason = 'Placeholder' },
+    [`weapon_pistol_semiauto`]                 = { name = 'weapon_pistol_semiauto',                 label = 'Semi-Auto Pistol',                   weapontype = 'Pistol',       ammotype = 'AMMO_PISTOL',   damagereason = 'Placeholder' },
+    -- repeater
+    [`weapon_repeater_carbine`]                = { name = 'weapon_repeater_carbine',                label = 'Carbine Repeater',                   weapontype = 'Repeater',     ammotype = 'AMMO_REPEATER', damagereason = 'Placeholder' },
+    [`weapon_repeater_winchester`]             = { name = 'weapon_repeater_winchester',             label = 'Winchester Repeater',                weapontype = 'Repeater',     ammotype = 'AMMO_REPEATER', damagereason = 'Placeholder' },
+    [`weapon_repeater_henry`]                  = { name = 'weapon_repeater_henry',                  label = 'Henry Repeater',                     weapontype = 'Repeater',     ammotype = 'AMMO_REPEATER', damagereason = 'Placeholder' },
+    [`weapon_repeater_evans`]                  = { name = 'weapon_repeater_evans',                  label = 'Evans Repeater',                     weapontype = 'Repeater',     ammotype = 'AMMO_REPEATER', damagereason = 'Placeholder' },
+    -- rifle
+    [`weapon_rifle_varmint`]                   = { name = 'weapon_rifle_varmint',                   label = 'Varmint Rifle',                      weapontype = 'Rifle',        ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    [`weapon_rifle_springfield`]               = { name = 'weapon_rifle_springfield',               label = 'Springfield Rifle',                  weapontype = 'Rifle',        ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    [`weapon_rifle_boltaction`]                = { name = 'weapon_rifle_boltaction',                label = 'Boltaction Rifle',                   weapontype = 'Rifle',        ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    [`weapon_rifle_elephant`]                  = { name = 'weapon_rifle_elephant',                  label = 'Elephant Rifle',                     weapontype = 'Rifle',        ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    -- sniperrifle
+    [`weapon_sniperrifle_rollingblock`]        = { name = 'weapon_sniperrifle_rollingblock',        label = 'Rollingblock Sniper Rifle',          weapontype = 'Sniper Rifle', ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    [`weapon_sniperrifle_rollingblock_exotic`] = { name = 'weapon_sniperrifle_rollingblock_exotic', label = 'Rollingblock Exotic Sniper Rifle',   weapontype = 'Sniper Rifle', ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    [`weapon_sniperrifle_carcano`]             = { name = 'weapon_sniperrifle_carcano',             label = 'Rollingblock Carcano Sniper Rifle',  weapontype = 'Sniper Rifle', ammotype = 'AMMO_RIFLE',    damagereason = 'Placeholder' },
+    -- shotgun
+    [`weapon_shotgun_doublebarrel`]            = { name = 'weapon_shotgun_doublebarrel',            label = 'Double Barrel Shotgun',              weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    [`weapon_shotgun_doublebarrel_exotic`]     = { name = 'weapon_shotgun_doublebarrel_exotic',     label = 'Double Barrel Exotic Shotgun',       weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    [`weapon_shotgun_sawedoff`]                = { name = 'weapon_shotgun_sawedoff',                label = 'Sawedoff Shotgun',                   weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    [`weapon_shotgun_semiauto`]                = { name = 'weapon_shotgun_semiauto',                label = 'Semi-Auto Shotgun',                  weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    [`weapon_shotgun_pump`]                    = { name = 'weapon_shotgun_pump',                    label = 'Pump Action Shotgun',                weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    [`weapon_shotgun_repeating`]               = { name = 'weapon_shotgun_repeating',               label = 'Repeating Shotgun',                  weapontype = 'Shotgun',      ammotype = 'AMMO_SHOTGUN',  damagereason = 'Placeholder' },
+    -- bow
+    [`weapon_bow`]                             = { name = 'weapon_bow',                             label = 'Sandard Bow',                        weapontype = 'Bow',          ammotype = 'AMMO_ARROW',    damagereason = 'Placeholder' },
+    [`weapon_bow_improved`]                    = { name = 'weapon_bow_improved',                    label = 'Improved Bow',                       weapontype = 'Bow',          ammotype = 'AMMO_ARROW',    damagereason = 'Placeholder' },
+    -- lasso
+    [`weapon_lasso`]                           = { name = 'weapon_lasso',                           label = 'Sandard Lasso',                      weapontype = 'Lasso',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_lasso_reinforced`]                = { name = 'weapon_lasso_reinforced',                label = 'Reinforced Lasso',                   weapontype = 'Lasso',        ammotype = nil,             damagereason = 'Placeholder' },
+    -- melee / knife
+    [`weapon_melee_knife`]                     = { name = 'weapon_melee_knife',                     label = 'Sandard Knife',                      weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_knife_jawbone`]             = { name = 'weapon_melee_knife_jawbone',             label = 'Jawbon Knife',                       weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_knife_trader`]              = { name = 'weapon_melee_knife_trader',              label = 'Tader Knife',                        weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_knife_horror`]              = { name = 'weapon_melee_knife_horror',              label = 'Horror Knife',                       weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_knife_rustic`]              = { name = 'weapon_melee_knife_rustic',              label = 'Rustic Knife',                       weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_machete`]                   = { name = 'weapon_melee_machete',                   label = 'Machete',                            weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_machete_horror`]            = { name = 'weapon_melee_machete_horror',            label = 'Machete Horror',                     weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_machete_collector`]         = { name = 'weapon_melee_machete_collector',         label = 'Machete Collector',                  weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_torch`]                     = { name = 'weapon_melee_torch',                     label = 'Torch',                              weapontype = 'Melee',        ammotype = nil,             damagereason = 'Placeholder' },
+    -- held
+    [`weapon_melee_davy_lantern`]              = { name = 'weapon_melee_davy_lantern',              label = 'Davy Lantern',                       weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_lantern_halloween`]         = { name = 'weapon_melee_lantern_halloween',         label = 'Halloween Lantern',                  weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_kit_binoculars`]                  = { name = 'weapon_kit_binoculars',                  label = 'Binoculars',                         weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_kit_binoculars_improved`]         = { name = 'weapon_kit_binoculars_improved',         label = 'Improved Binoculars',                weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_kit_camera`]                      = { name = 'weapon_kit_camera',                      label = 'Camera',                             weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_kit_camera_advanced`]             = { name = 'weapon_kit_camera_advanced',             label = 'Advanced Camera',                    weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_kit_metal_detector`]              = { name = 'weapon_kit_metal_detector',              label = 'Metal Detector',                     weapontype = 'Held',         ammotype = nil,             damagereason = 'Placeholder' },
+    -- trown
+    [`weapon_melee_hatchet`]                   = { name = 'weapon_melee_hatchet',                   label = 'Hatchet',                            weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_hatchet_hunter`]            = { name = 'weapon_melee_hatchet_hunter',            label = 'Hunter Hatchet',                     weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_hatchet_double_bit`]        = { name = 'weapon_melee_hatchet_double_bit',        label = 'Double Bit Hatchet',                 weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_molotov`]                  = { name = 'weapon_thrown_molotov',                  label = 'Molotov',                            weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_tomahawk`]                 = { name = 'weapon_thrown_tomahawk',                 label = 'Tomahawk',                           weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_tomahawk_ancient`]         = { name = 'weapon_thrown_tomahawk_ancient',         label = 'Tomahawk Ancient',                   weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_dynamite`]                 = { name = 'weapon_thrown_dynamite',                 label = 'Dynamite',                           weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_poisonbottle`]             = { name = 'weapon_thrown_poisonbottle',             label = 'Poison Bottle',                      weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_throwing_knives`]          = { name = 'weapon_thrown_throwing_knives',          label = 'Throwing Kives',                     weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_melee_cleaver`]                   = { name = 'weapon_melee_cleaver',                   label = 'Cleaver',                            weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_bolas`]                    = { name = 'weapon_thrown_bolas',                    label = 'Balas',                              weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_bolas_hawkmoth`]           = { name = 'weapon_thrown_bolas_hawkmoth',           label = 'Hawkmoth Balas',                     weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_bolas_ironspiked`]         = { name = 'weapon_thrown_bolas_ironspiked',         label = 'Iron Spiked Balas',                  weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    [`weapon_thrown_bolas_intertwined`]        = { name = 'weapon_thrown_bolas_intertwined',        label = 'Intertwined Balas',                  weapontype = 'Thrown',       ammotype = nil,             damagereason = 'Placeholder' },
+    -- fishing
+    [`weapon_fishingrod`]                      = { name = 'weapon_fishingrod',                      label = 'Fishing Rod',                        weapontype = 'Fishing',      ammotype = nil,             damagereason = 'Placeholder' },
 }
-Node7Weapons = Node7Shared.WeaponsByName
-
-Node7Shared.AmmoTypes = {
-    AMMO_REVOLVER = { label = 'Revolver Cartridges', max = 200 },
-    AMMO_REVOLVER_HIGH_VELOCITY = { label = 'High Velocity Revolver Cartridges', max = 200 },
-    AMMO_REVOLVER_EXPRESS = { label = 'Express Revolver Cartridges', max = 200 },
-    AMMO_REVOLVER_SPLIT_POINT = { label = 'Split Point Revolver Cartridges', max = 200 },
-    AMMO_REVOLVER_EXPRESS_EXPLOSIVE = { label = 'Explosive Revolver Cartridges', max = 100 },
-    AMMO_PISTOL = { label = 'Pistol Cartridges', max = 200 },
-    AMMO_PISTOL_HIGH_VELOCITY = { label = 'High Velocity Pistol Cartridges', max = 200 },
-    AMMO_PISTOL_EXPRESS = { label = 'Express Pistol Cartridges', max = 200 },
-    AMMO_PISTOL_SPLIT_POINT = { label = 'Split Point Pistol Cartridges', max = 200 },
-    AMMO_PISTOL_EXPRESS_EXPLOSIVE = { label = 'Explosive Pistol Cartridges', max = 100 },
-    AMMO_REPEATER = { label = 'Repeater Cartridges', max = 200 },
-    AMMO_REPEATER_HIGH_VELOCITY = { label = 'High Velocity Repeater Cartridges', max = 200 },
-    AMMO_REPEATER_EXPRESS = { label = 'Express Repeater Cartridges', max = 200 },
-    AMMO_REPEATER_SPLIT_POINT = { label = 'Split Point Repeater Cartridges', max = 200 },
-    AMMO_REPEATER_EXPRESS_EXPLOSIVE = { label = 'Explosive Repeater Cartridges', max = 100 },
-    AMMO_RIFLE = { label = 'Rifle Cartridges', max = 200 },
-    AMMO_RIFLE_HIGH_VELOCITY = { label = 'High Velocity Rifle Cartridges', max = 200 },
-    AMMO_RIFLE_EXPRESS = { label = 'Express Rifle Cartridges', max = 200 },
-    AMMO_RIFLE_SPLIT_POINT = { label = 'Split Point Rifle Cartridges', max = 200 },
-    AMMO_RIFLE_EXPRESS_EXPLOSIVE = { label = 'Explosive Rifle Cartridges', max = 100 },
-    AMMO_RIFLE_ELEPHANT = { label = 'Elephant Rifle Cartridges', max = 40 },
-    AMMO_22 = { label = '.22 Caliber Cartridges', max = 200 },
-    AMMO_SHOTGUN = { label = 'Shotgun Shells', max = 120 },
-    AMMO_SHOTGUN_SLUG = { label = 'Shotgun Slugs', max = 120 },
-    AMMO_SHOTGUN_INCENDIARY = { label = 'Incendiary Shotgun Shells', max = 60 },
-    AMMO_SHOTGUN_EXPRESS_EXPLOSIVE = { label = 'Explosive Shotgun Shells', max = 60 },
-    AMMO_ARROW = { label = 'Arrows', max = 40 },
-    AMMO_ARROW_FIRE = { label = 'Fire Arrows', max = 20 },
-    AMMO_ARROW_POISON = { label = 'Poison Arrows', max = 20 },
-    AMMO_ARROW_DYNAMITE = { label = 'Dynamite Arrows', max = 8 },
-    AMMO_ARROW_IMPROVED = { label = 'Improved Arrows', max = 40 },
-    AMMO_ARROW_SMALL_GAME = { label = 'Small Game Arrows', max = 40 },
-    AMMO_TOMAHAWK = { label = 'Tomahawks', max = 10 },
-    AMMO_THROWING_KNIVES = { label = 'Throwing Knives', max = 10 },
-    AMMO_DYNAMITE = { label = 'Dynamite', max = 8 },
-    AMMO_MOLOTOV = { label = 'Fire Bottles', max = 8 },
-    AMMO_BOLAS = { label = 'Bolas', max = 10 }
-}
-Node7AmmoTypes = Node7Shared.AmmoTypes
-
-Node7Shared.Weapons = {}
-Node7WeaponHashes = Node7Shared.Weapons
-for weaponName, definition in pairs(Node7Weapons) do
-    definition.name = definition.name or weaponName:lower()
-    local attachPoints = { revolver = 2, pistol = 2, repeater = 9, rifle = 9, sniper = 10, shotgun = 9, bow = 7, throwable = 6, melee = 13, utility = 13 }
-    definition.attachPoint = definition.attachPoint or attachPoints[definition.category] or 9
-    definition.weight = definition.weight or 1000
-    definition.type = 'weapon'
-    definition.ammotype = definition.ammo
-    definition.image = definition.image or (definition.name .. '.png')
-    definition.unique = definition.unique ~= false
-    definition.useable = definition.useable ~= false
-    definition.level = definition.level or 0
-    definition.description = definition.description or definition.label
-    definition.metadata = definition.metadata or { condition = 100, components = {}, customName = definition.label }
-    Node7WeaponHashes[joaat(weaponName)] = definition
-end

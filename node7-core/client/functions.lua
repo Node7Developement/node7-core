@@ -1,341 +1,710 @@
-Node7Client = {
-    PlayerData = nil,
-    CharacterData = nil,
-    Loaded = false,
-    Callbacks = {},
-    RequestId = 0,
-    ActiveProgress = nil,
-    ActiveHorse = nil,
-    ActiveWagon = nil,
-    Blips = {},
-    Peds = {},
-    Shared = Node7Shared
-}
-Node7Core = Node7Client
-Node7Client.Functions = Node7Client
+Node7Core.Functions = {}
 
-local function nui(action, data)
-    SendNUIMessage({ action = action, data = data })
+-- Callbacks
+
+function Node7Core.Functions.CreateClientCallback(name, cb)
+    Node7Core.ClientCallbacks[name] = cb
 end
 
-function Node7Client.TriggerCallback(name, callback, ...)
-    Node7Client.RequestId = Node7Client.RequestId + 1
-    if Node7Client.RequestId > 1000000 then Node7Client.RequestId = 1 end
-    Node7Client.Callbacks[Node7Client.RequestId] = callback
-    TriggerServerEvent('node7:server:callback', Node7Client.RequestId, name, ...)
+function Node7Core.Functions.TriggerClientCallback(name, cb, ...)
+    if not Node7Core.ClientCallbacks[name] then return end
+    Node7Core.ClientCallbacks[name](cb, ...)
 end
 
-function Node7Client.Notify(message, notificationType, duration)
-    nui('notify', {
-        message = tostring(message),
-        type = notificationType or 'info',
-        duration = duration or 4000
-    })
+function Node7Core.Functions.TriggerCallback(name, cb, ...)
+    Node7Core.ServerCallbacks[name] = cb
+    TriggerServerEvent('Node7Core:Server:TriggerCallback', name, ...)
 end
 
-function Node7Client.Progress(options, callback)
-    if Node7Client.ActiveProgress then return false end
-    options = options or {}
-    Node7Client.ActiveProgress = {
-        callback = callback,
-        cancellable = options.cancellable ~= false,
-        disableMovement = options.disableMovement ~= false,
-        disableCombat = options.disableCombat ~= false
-    }
-    nui('progress', {
-        label = options.label or 'Working...',
-        duration = math.max(tonumber(options.duration) or 3000, 250),
-        cancellable = Node7Client.ActiveProgress.cancellable
-    })
-    return true
+function Node7Core.Debug(resource, obj, depth)
+    TriggerServerEvent('Node7Core:DebugSomething', resource, obj, depth)
 end
 
-function Node7Client.GetCoords(entity)
-    entity = entity or PlayerPedId()
+-- Player
+
+function Node7Core.Functions.GetPlayerData(cb)
+    if not cb then return Node7Core.PlayerData end
+    cb(Node7Core.PlayerData)
+end
+
+function Node7Core.Functions.GetCoords(entity)
     local coords = GetEntityCoords(entity)
     return vector4(coords.x, coords.y, coords.z, GetEntityHeading(entity))
 end
 
-function Node7Client.HasItem(itemName, amount)
-    local result = promise.new()
-    Node7Client.TriggerCallback('inventory:hasItem', function(success, hasItem)
-        result:resolve(success and hasItem == true)
-    end, itemName, tonumber(amount) or 1)
-    return Citizen.Await(result)
+function Node7Core.Functions.HasItem(items, amount)
+    amount = amount or 1
+    if GetResourceState('node7-inventory') == 'started' then
+        local ok, result = pcall(function()
+            return exports['node7-inventory']:HasItem(items, amount)
+        end)
+        if ok then return result end
+    end
+
+    if GetResourceState('ox_inventory') == 'started' then
+        local ok, count = pcall(function()
+            return exports.ox_inventory:Search('count', items)
+        end)
+        if ok then return tonumber(count) and tonumber(count) >= amount end
+    end
+
+    return false
 end
 
-RegisterNetEvent('node7:client:callback', function(requestId, success, ...)
-    local callback = Node7Client.Callbacks[requestId]
-    if not callback then return end
-    Node7Client.Callbacks[requestId] = nil
-    callback(success, ...)
-end)
-
-RegisterNetEvent('node7:client:notify', function(data)
-    Node7Client.Notify(data.message, data.type, data.duration)
-end)
-
-RegisterNetEvent('node7:client:onSharedUpdate', function(category, key, value)
-    if type(category) ~= 'string' or not Node7Shared[category] then return end
-    Node7Shared[category][key] = value
-    TriggerEvent('node7:client:sharedUpdated', category, key, value)
-end)
-
-RegisterNetEvent('node7:client:onSharedUpdateMultiple', function(category, values)
-    if type(category) ~= 'string' or not Node7Shared[category] or type(values) ~= 'table' then return end
-    for key, value in pairs(values) do Node7Shared[category][key] = value end
-    TriggerEvent('node7:client:sharedUpdatedMultiple', category, values)
-end)
-
-RegisterNetEvent('node7:client:updateObject', function()
-    Node7Client.Shared = Node7Shared
-    TriggerEvent('node7:client:coreUpdated', Node7Client)
-end)
-
-RegisterNetEvent('node7:client:setPlayerData', function(playerData)
-    Node7Client.PlayerData = playerData
-    TriggerEvent('node7:client:playerDataUpdated', playerData)
-end)
-
-RegisterNetEvent('Node7:Player:SetPlayerData', function(playerData)
-    Node7Client.PlayerData = playerData
-    TriggerEvent('node7:client:playerDataUpdated', playerData)
-end)
-
-RegisterNetEvent('node7:client:loaded', function(data)
-    Node7Client.PlayerData = data.PlayerData or data
-    Node7Client.CharacterData = data.character
-    Node7Client.Loaded = true
-    SetNuiFocus(false, false)
-    nui('characters:close')
-    nui('startup', false)
-    nui('player', data)
-
-    local position = data.character and data.character.position
-    if position and position.x then
-        local ped = PlayerPedId()
-        SetEntityCoords(ped, position.x + 0.0, position.y + 0.0, position.z + 0.0, false, false, false, false)
-        SetEntityHeading(ped, (position.w or 0.0) + 0.0)
-    end
-    Node7Client.Notify(Node7Translate('character_loaded'), 'success')
-end)
-
-
-RegisterNetEvent('node7:client:unloaded', function()
-    Node7Client.PlayerData = nil
-    Node7Client.CharacterData = nil
-    Node7Client.Loaded = false
-    SetNuiFocus(false, false)
-    nui('startup', false)
-    nui('player', nil)
-end)
-
-RegisterNetEvent('node7:client:moneyChanged', function(money)
-    if Node7Client.PlayerData then Node7Client.PlayerData.money = money end
-    if Node7Client.CharacterData then Node7Client.CharacterData.money = money end
-    nui('money', money)
-end)
-
-RegisterNetEvent('node7:client:jobChanged', function(job)
-    if Node7Client.CharacterData then Node7Client.CharacterData.job = job end
-    nui('job', job)
-end)
-
-RegisterNetEvent('node7:client:gangChanged', function(gang)
-    if Node7Client.CharacterData then Node7Client.CharacterData.gang = gang end
-    nui('gang', gang)
-end)
-
-RegisterNetEvent('node7:client:statusChanged', function(metadata)
-    if Node7Client.PlayerData then Node7Client.PlayerData.metadata = metadata end
-    if Node7Client.CharacterData then Node7Client.CharacterData.metadata = metadata end
-    nui('status', metadata)
-end)
-
-RegisterNetEvent('node7:client:inventoryChanged', function()
-    nui('inventory:dirty')
-end)
-
-RegisterNetEvent('node7:client:heal', function(amount)
+---@param entity number - The entity to look at
+---@param timeout number - The time in milliseconds before the function times out
+---@param speed number - The speed at which the entity should turn
+---@return number - The time at which the entity was looked at
+function Node7Core.Functions.LookAtEntity(entity, timeout, speed)
+    if not DoesEntityExist(entity) then return end
+    if type(entity) ~= 'number' then return end
+    if speed and type(speed) ~= 'number' then return end
+    if speed and speed > 5.0 then speed = 5.0 end
+    if not timeout or timeout > 5000 then timeout = 5000 end
     local ped = PlayerPedId()
-    SetEntityHealth(ped, math.min(GetEntityMaxHealth(ped), GetEntityHealth(ped) + (tonumber(amount) or 0)))
-end)
-
-RegisterNetEvent('node7:client:applyItemEffects', function(effects)
-    local ped = PlayerPedId()
-    if effects.health then
-        SetEntityHealth(ped, math.min(GetEntityMaxHealth(ped), GetEntityHealth(ped) + tonumber(effects.health)))
-    end
-    if effects.stamina then
-        RestorePlayerStamina(PlayerId(), math.min(1.0, tonumber(effects.stamina) / 100.0))
-    end
-end)
-
-local function loadModel(model)
-    local hash = type(model) == 'number' and model or joaat(model)
-    if not IsModelValid(hash) then return nil, 'invalid_model' end
-    RequestModel(hash)
-    local deadline = GetGameTimer() + Node7Config.Stables.modelLoadTimeout
-    while not HasModelLoaded(hash) and GetGameTimer() < deadline do Wait(50) end
-    if not HasModelLoaded(hash) then return nil, 'model_timeout' end
-    return hash
-end
-
-local function removeEntity(entity)
-    if entity and DoesEntityExist(entity) then
-        SetEntityAsMissionEntity(entity, true, true)
-        DeleteEntity(entity)
-    end
-end
-
-RegisterNetEvent('node7:client:spawnHorse', function(data)
-    local hash, reason = loadModel(data.model)
-    if not hash then Node7Client.Notify(('Horse spawn failed: %s'):format(reason), 'error') return end
-    if Node7Config.Stables.replaceActiveEntity then removeEntity(Node7Client.ActiveHorse) end
-    local ped = PlayerPedId()
-    local spawn = GetOffsetFromEntityInWorldCoords(ped, 2.5, Node7Config.Stables.spawnDistance, 0.0)
-    local horse = CreatePed(hash, spawn.x, spawn.y, spawn.z, GetEntityHeading(ped), true, true, false, false)
-    if not horse or horse == 0 then
-        SetModelAsNoLongerNeeded(hash)
-        Node7Client.Notify('Horse creation failed.', 'error')
-        return
-    end
-    SetEntityAsMissionEntity(horse, true, true)
-    PlaceEntityOnGroundProperly(horse)
-    NetworkRegisterEntityAsNetworked(horse)
-    local netId = NetworkGetNetworkIdFromEntity(horse)
-    SetNetworkIdCanMigrate(netId, true)
-    Node7Client.ActiveHorse = horse
-    SetModelAsNoLongerNeeded(hash)
-    Node7Client.Notify(('%s is ready.'):format(data.name or 'Your horse'), 'success')
-end)
-
-RegisterNetEvent('node7:client:spawnWagon', function(data, adminSpawn)
-    local hash, reason = loadModel(data.model)
-    if not hash then Node7Client.Notify(('Wagon spawn failed: %s'):format(reason), 'error') return end
-    if Node7Config.Stables.replaceActiveEntity then removeEntity(Node7Client.ActiveWagon) end
-    local ped = PlayerPedId()
-    local spawn = GetOffsetFromEntityInWorldCoords(ped, 3.0, Node7Config.Stables.spawnDistance + 2.0, 0.0)
-    local wagon = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, GetEntityHeading(ped), true, true, false, false)
-    if not wagon or wagon == 0 then
-        SetModelAsNoLongerNeeded(hash)
-        Node7Client.Notify('Wagon creation failed.', 'error')
-        return
-    end
-    SetEntityAsMissionEntity(wagon, true, true)
-    PlaceEntityOnGroundProperly(wagon)
-    NetworkRegisterEntityAsNetworked(wagon)
-    local netId = NetworkGetNetworkIdFromEntity(wagon)
-    SetNetworkIdCanMigrate(netId, true)
-    Node7Client.ActiveWagon = wagon
-    SetModelAsNoLongerNeeded(hash)
-    if adminSpawn and Node7Config.Stables.warpIntoAdminWagon then TaskWarpPedIntoVehicle(ped, wagon, -1) end
-    Node7Client.Notify(('%s is ready.'):format(data.name or 'Your wagon'), 'success')
-end)
-
-RegisterNetEvent('node7:client:dismissHorse', function()
-    removeEntity(Node7Client.ActiveHorse)
-    Node7Client.ActiveHorse = nil
-    Node7Client.Notify('Horse dismissed.', 'info')
-end)
-
-RegisterNetEvent('node7:client:dismissWagon', function()
-    removeEntity(Node7Client.ActiveWagon)
-    Node7Client.ActiveWagon = nil
-    Node7Client.Notify('Wagon dismissed.', 'info')
-end)
-
-RegisterNetEvent('node7:client:weaponGiven', function(weaponName, ammo)
-    local ped = PlayerPedId()
-    Citizen.InvokeNative(0x5E3BDDBCB83F3D84, ped, joaat(weaponName), tonumber(ammo) or 0,
-        false, true, 0, false, 0.5, 1.0, 0, 0, false)
-end)
-
-RegisterNetEvent('node7:client:weaponRemoved', function(serial)
-    Node7Client.Notify(('Weapon %s removed. Reconnect to refresh the native loadout.'):format(serial), 'info')
-end)
-
-RegisterNetEvent('node7:client:weaponAmmoChanged', function(weaponName, amount)
-    SetPedAmmo(PlayerPedId(), joaat(weaponName), tonumber(amount) or 0)
-end)
-
-RegisterNUICallback('inventory:close', function(_, cb)
-    SetNuiFocus(false, false)
-    nui('inventory:close')
-    cb({ ok = true })
-end)
-
-RegisterNUICallback('inventory:use', function(data, cb)
-    TriggerServerEvent('node7:server:useItem', data.itemName, tonumber(data.slot))
-    cb({ ok = true })
-end)
-
-RegisterNUICallback('progress:complete', function(data, cb)
-    local progress = Node7Client.ActiveProgress
-    Node7Client.ActiveProgress = nil
-    if progress and progress.callback then progress.callback(not data.cancelled) end
-    cb({ ok = true })
-end)
-
-RegisterCommand('node7_inventory', function()
-    if not Node7Client.Loaded then return end
-    Node7Client.TriggerCallback('inventory:get', function(success, inventory)
-        if not success or not inventory then return end
-        SetNuiFocus(true, true)
-        nui('inventory', inventory)
-    end)
-end, false)
-
-RegisterKeyMapping('node7_inventory', 'Open NODE7 inventory', 'keyboard', 'I')
-
-CreateThread(function()
-    nui('theme', Node7Config.UI)
-    nui('startup', false)
-end)
-
-CreateThread(function()
+    local playerPos = GetEntityCoords(ped)
+    local targetPos = GetEntityCoords(entity)
+    local dx = targetPos.x - playerPos.x
+    local dy = targetPos.y - playerPos.y
+    local targetHeading = GetHeadingFromVector_2d(dx, dy)
+    local turnSpeed = speed
+    local startTimeout = GetGameTimer()
     while true do
-        if Node7Client.ActiveProgress then
-            if Node7Client.ActiveProgress.disableMovement then
-                DisableControlAction(0, 0x8FD015D8, true)
-                DisableControlAction(0, 0xD27782E3, true)
-                DisableControlAction(0, 0x7065027D, true)
-                DisableControlAction(0, 0xB4E465B4, true)
-            end
-            if Node7Client.ActiveProgress.disableCombat then
-                DisablePlayerFiring(PlayerId(), true)
-            end
-            if Node7Client.ActiveProgress.cancellable and IsControlJustReleased(0, 0x156F7119) then
-                nui('progress:cancel')
-            end
-            Wait(0)
+        local currentHeading = GetEntityHeading(ped)
+        local diff = targetHeading - currentHeading
+        if math.abs(diff) < 2 then
+            break
+        end
+        if diff < -180 then
+            diff = diff + 360
+        elseif diff > 180 then
+            diff = diff - 360
+        end
+        turnSpeed = speed + (2.5 - speed) * (1 - math.abs(diff) / 180)
+        if diff > 0 then
+            currentHeading = currentHeading + turnSpeed
         else
-            Wait(250)
+            currentHeading = currentHeading - turnSpeed
+        end
+        SetEntityHeading(ped, currentHeading)
+        Wait(0)
+        if (startTimeout + timeout) < GetGameTimer() then break end
+    end
+    SetEntityHeading(ped, targetHeading)
+end
+
+-- Function to run an animation
+---@deprecated use lib.requestAnimDict from ox_lib, and the TaskPlayAnim and RemoveAnimDict natives directly
+--- @param animDic string: The name of the animation dictionary
+--- @param animName string - The name of the animation within the dictionary
+--- @param duration number - The duration of the animation in milliseconds. -1 will play the animation indefinitely
+--- @param upperbodyOnly boolean - If true, the animation will only affect the upper body of the ped
+--- @return number - The timestamp indicating when the animation concluded. For animations set to loop indefinitely, this will still return the maximum duration of the animation.
+function Node7Core.Functions.PlayAnim(animDict, animName, upperbodyOnly, duration)
+    local flags = upperbodyOnly and 16 or 0
+    local runTime = duration or -1
+    lib.playAnim(cache.ped, animDict, animName, 8.0, 3.0, runTime, flags, 0.0, false, false, true)
+end
+
+function Node7Core.Functions.IsWearingGloves()
+    local ped = PlayerPedId()
+    local armIndex = GetPedDrawableVariation(ped, 3)
+    local model = GetEntityModel(ped)
+    if model == `mp_m_freemode_01` then
+        if Node7Core.Shared.MaleNoGloves[armIndex] then
+            return false
+        end
+    else
+        if Node7Core.Shared.FemaleNoGloves[armIndex] then
+            return false
         end
     end
-end)
+    return true
+end
 
-exports('GetPlayerData', function() return Node7Client.PlayerData end)
-exports('IsPlayerLoaded', function() return Node7Client.Loaded end)
-exports('TriggerCallback', Node7Client.TriggerCallback)
-exports('Notify', Node7Client.Notify)
-exports('Progress', Node7Client.Progress)
-exports('Progressbar', Node7Client.Progress)
-exports('GetCoords', Node7Client.GetCoords)
-exports('HasItem', Node7Client.HasItem)
-exports('LoadModel', loadModel)
-exports('GetCoreObject', function() return Node7Client end)
-exports('GetSharedObject', function() return Node7Shared end)
-exports('GetItems', function() return Node7Shared.Items end)
-exports('GetItem', function(name) return Node7Shared.Items[name] end)
-exports('GetJobs', function() return Node7Shared.Jobs end)
-exports('GetGangs', function() return Node7Shared.Gangs end)
-exports('GetHorses', function() return Node7Shared.Horses end)
-exports('GetVehicles', function() return Node7Shared.Vehicles end)
-exports('GetWeapons', function() return Node7Shared.Weapons end)
+-- World Getters
 
-AddEventHandler('onResourceStop', function(resource)
-    if resource ~= GetCurrentResourceName() then return end
-    removeEntity(Node7Client.ActiveHorse)
-    removeEntity(Node7Client.ActiveWagon)
-end)
+function Node7Core.Functions.GetVehicles()
+    return GetGamePool('CVehicle')
+end
+
+function Node7Core.Functions.GetObjects()
+    return GetGamePool('CObject')
+end
+
+function Node7Core.Functions.GetPlayers()
+    return GetActivePlayers()
+end
+
+function Node7Core.Functions.GetPlayersFromCoords(coords, distance)
+    local players = GetActivePlayers()
+    local ped = PlayerPedId()
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(ped)
+    end
+    distance = distance or 5
+    local closePlayers = {}
+    for _, player in ipairs(players) do
+        local targetCoords = GetEntityCoords(GetPlayerPed(player))
+        local targetdistance = #(targetCoords - coords)
+        if targetdistance <= distance then
+            closePlayers[#closePlayers + 1] = player
+        end
+    end
+    return closePlayers
+end
+
+function Node7Core.Functions.GetClosestPlayer(coords)
+    local ped = PlayerPedId()
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(ped)
+    end
+    local closestPlayers = Node7Core.Functions.GetPlayersFromCoords(coords)
+    local closestDistance = -1
+    local closestPlayer = -1
+    for i = 1, #closestPlayers, 1 do
+        if closestPlayers[i] ~= PlayerId() and closestPlayers[i] ~= -1 then
+            local pos = GetEntityCoords(GetPlayerPed(closestPlayers[i]))
+            local distance = #(pos - coords)
+
+            if closestDistance == -1 or closestDistance > distance then
+                closestPlayer = closestPlayers[i]
+                closestDistance = distance
+            end
+        end
+    end
+    return closestPlayer, closestDistance
+end
+
+function Node7Core.Functions.GetPeds(ignoreList)
+    local pedPool = GetGamePool('CPed')
+    local peds = {}
+    local ignoreTable = {}
+    ignoreList = ignoreList or {}
+    for i = 1, #ignoreList do
+        ignoreTable[ignoreList[i]] = true
+    end
+    for i = 1, #pedPool do
+        if not ignoreTable[pedPool[i]] then
+            peds[#peds + 1] = pedPool[i]
+        end
+    end
+    return peds
+end
+
+function Node7Core.Functions.GetClosestPed(coords, ignoreList)
+    local ped = PlayerPedId()
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(ped)
+    end
+    ignoreList = ignoreList or {}
+    local peds = Node7Core.Functions.GetPeds(ignoreList)
+    local closestDistance = -1
+    local closestPed = -1
+    for i = 1, #peds, 1 do
+        local pedCoords = GetEntityCoords(peds[i])
+        local distance = #(pedCoords - coords)
+
+        if closestDistance == -1 or closestDistance > distance then
+            closestPed = peds[i]
+            closestDistance = distance
+        end
+    end
+    return closestPed, closestDistance
+end
+
+function Node7Core.Functions.GetClosestVehicle(coords)
+    local ped = PlayerPedId()
+    local vehicles = GetGamePool('CVehicle')
+    local closestDistance = -1
+    local closestVehicle = -1
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(ped)
+    end
+    for i = 1, #vehicles, 1 do
+        local vehicleCoords = GetEntityCoords(vehicles[i])
+        local distance = #(vehicleCoords - coords)
+
+        if closestDistance == -1 or closestDistance > distance then
+            closestVehicle = vehicles[i]
+            closestDistance = distance
+        end
+    end
+    return closestVehicle, closestDistance
+end
+
+function Node7Core.Functions.GetClosestObject(coords)
+    local ped = PlayerPedId()
+    local objects = GetGamePool('CObject')
+    local closestDistance = -1
+    local closestObject = -1
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(ped)
+    end
+    for i = 1, #objects, 1 do
+        local objectCoords = GetEntityCoords(objects[i])
+        local distance = #(objectCoords - coords)
+        if closestDistance == -1 or closestDistance > distance then
+            closestObject = objects[i]
+            closestDistance = distance
+        end
+    end
+    return closestObject, closestDistance
+end
+
+-- Vehicle
+
+---@deprecated use lib.requestModel from ox_lib
+Node7Core.Functions.LoadModel = lib.requestModel
+
+---@deprecated use qbx.spawnVehicle from modules/lib.lua
+---@param model string|number
+---@param cb? fun(vehicle: number)
+---@param coords? vector4 player position if not specified
+---@param isnetworked? boolean defaults to true
+---@param teleportInto boolean teleport player to driver seat if true
+function Node7Core.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)
+    local playerCoords = GetEntityCoords(cache.ped)
+    local combinedCoords = vec4(playerCoords.x, playerCoords.y, playerCoords.z, GetEntityHeading(cache.ped))
+    coords = type(coords) == 'table' and vec4(coords.x, coords.y, coords.z, coords.w or combinedCoords.w) or coords or combinedCoords
+    model = type(model) == 'string' and joaat(model) or model
+    if not IsModelInCdimage(model) then return end
+
+    isnetworked = isnetworked == nil or isnetworked
+    lib.requestModel(model)
+    local veh = CreateVehicle(model, coords.x, coords.y, coords.z, coords.w, isnetworked, false)
+    local netid = NetworkGetNetworkIdFromEntity(veh)
+    SetVehicleHasBeenOwnedByPlayer(veh, true)
+    SetNetworkIdCanMigrate(netid, true)
+    SetModelAsNoLongerNeeded(model)
+    if teleportInto then TaskWarpPedIntoVehicle(cache.ped, veh, -1) end
+    if cb then cb(veh) end
+end
+
+function Node7Core.Functions.DeleteVehicle(vehicle)
+    SetEntityAsMissionEntity(vehicle, true, true)
+    DeleteVehicle(vehicle)
+end
+
+function Node7Core.Functions.GetPlate(vehicle)
+    if vehicle == 0 then return end
+    return Node7Core.Shared.Trim(GetVehicleNumberPlateText(vehicle))
+end
+
+function Node7Core.Functions.GetVehicleLabel(vehicle)
+    if vehicle == nil or vehicle == 0 then return end
+    return GetLabelText(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)))
+end
+
+function Node7Core.Functions.GetVehicleProperties(vehicle)
+    if DoesEntityExist(vehicle) then
+        local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
+
+        local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
+        if GetIsVehiclePrimaryColourCustom(vehicle) then
+            local r, g, b = GetVehicleCustomPrimaryColour(vehicle)
+            colorPrimary = { r, g, b }
+        end
+
+        if GetIsVehicleSecondaryColourCustom(vehicle) then
+            local r, g, b = GetVehicleCustomSecondaryColour(vehicle)
+            colorSecondary = { r, g, b }
+        end
+
+        local extras = {}
+        for extraId = 0, 12 do
+            if DoesExtraExist(vehicle, extraId) then
+                local state = IsVehicleExtraTurnedOn(vehicle, extraId) == 1
+                extras[tostring(extraId)] = state
+            end
+        end
+
+        local tireHealth = {}
+        for i = 0, 3 do
+            tireHealth[i] = GetVehicleWheelHealth(vehicle, i)
+        end
+
+        local tireBurstState = {}
+        for i = 0, 5 do
+            tireBurstState[i] = IsVehicleTyreBurst(vehicle, i, false)
+        end
+
+        local tireBurstCompletely = {}
+        for i = 0, 5 do
+            tireBurstCompletely[i] = IsVehicleTyreBurst(vehicle, i, true)
+        end
+
+        local windowStatus = {}
+        for i = 0, 7 do
+            windowStatus[i] = IsVehicleWindowIntact(vehicle, i) == 1
+        end
+
+        local doorStatus = {}
+        for i = 0, 5 do
+            doorStatus[i] = IsVehicleDoorDamaged(vehicle, i) == 1
+        end
+
+        return {
+            model = GetEntityModel(vehicle),
+            plate = Node7Core.Functions.GetPlate(vehicle),
+            plateIndex = GetVehicleNumberPlateTextIndex(vehicle),
+            bodyHealth = Node7Core.Shared.Round(GetVehicleBodyHealth(vehicle), 0.1),
+            engineHealth = Node7Core.Shared.Round(GetVehicleEngineHealth(vehicle), 0.1),
+            tankHealth = Node7Core.Shared.Round(GetVehiclePetrolTankHealth(vehicle), 0.1),
+            fuelLevel = Node7Core.Shared.Round(GetVehicleFuelLevel(vehicle), 0.1),
+            dirtLevel = Node7Core.Shared.Round(GetVehicleDirtLevel(vehicle), 0.1),
+            oilLevel = Node7Core.Shared.Round(GetVehicleOilLevel(vehicle), 0.1),
+            color1 = colorPrimary,
+            color2 = colorSecondary,
+            pearlescentColor = pearlescentColor,
+            dashboardColor = GetVehicleDashboardColour(vehicle),
+            wheelColor = wheelColor,
+            wheels = GetVehicleWheelType(vehicle),
+            wheelSize = GetVehicleWheelSize(vehicle),
+            wheelWidth = GetVehicleWheelWidth(vehicle),
+            tireHealth = tireHealth,
+            tireBurstState = tireBurstState,
+            tireBurstCompletely = tireBurstCompletely,
+            windowTint = GetVehicleWindowTint(vehicle),
+            windowStatus = windowStatus,
+            doorStatus = doorStatus,
+        }
+    else
+        return
+    end
+end
+
+function Node7Core.Functions.SetVehicleProperties(vehicle, props)
+    if DoesEntityExist(vehicle) then
+        if props.extras then
+            for id, enabled in pairs(props.extras) do
+                if enabled then
+                    SetVehicleExtra(vehicle, tonumber(id), 0)
+                else
+                    SetVehicleExtra(vehicle, tonumber(id), 1)
+                end
+            end
+        end
+
+        local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
+        local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
+        SetVehicleModKit(vehicle, 0)
+        if props.plate then
+            SetVehicleNumberPlateText(vehicle, props.plate)
+        end
+        if props.plateIndex then
+            SetVehicleNumberPlateTextIndex(vehicle, props.plateIndex)
+        end
+        if props.bodyHealth then
+            SetVehicleBodyHealth(vehicle, props.bodyHealth + 0.0)
+        end
+        if props.engineHealth then
+            SetVehicleEngineHealth(vehicle, props.engineHealth + 0.0)
+        end
+        if props.tankHealth then
+            SetVehiclePetrolTankHealth(vehicle, props.tankHealth)
+        end
+        if props.fuelLevel then
+            SetVehicleFuelLevel(vehicle, props.fuelLevel + 0.0)
+        end
+        if props.dirtLevel then
+            SetVehicleDirtLevel(vehicle, props.dirtLevel + 0.0)
+        end
+        if props.oilLevel then
+            SetVehicleOilLevel(vehicle, props.oilLevel)
+        end
+        if props.color1 then
+            if type(props.color1) == 'number' then
+                ClearVehicleCustomPrimaryColour(vehicle)
+                SetVehicleColours(vehicle, props.color1, colorSecondary)
+            else
+                SetVehicleCustomPrimaryColour(vehicle, props.color1[1], props.color1[2], props.color1[3])
+            end
+        end
+        if props.color2 then
+            if type(props.color2) == 'number' then
+                ClearVehicleCustomSecondaryColour(vehicle)
+                SetVehicleColours(vehicle, props.color1 or colorPrimary, props.color2)
+            else
+                SetVehicleCustomSecondaryColour(vehicle, props.color2[1], props.color2[2], props.color2[3])
+            end
+        end
+        if props.wheelColor then
+            SetVehicleExtraColours(vehicle, props.pearlescentColor or pearlescentColor, props.wheelColor)
+        end
+        if props.wheels then
+            SetVehicleWheelType(vehicle, props.wheels)
+        end
+        if props.tireHealth then
+            for wheelIndex, health in pairs(props.tireHealth) do
+                SetVehicleWheelHealth(vehicle, wheelIndex, health)
+            end
+        end
+        if props.tireBurstState then
+            for wheelIndex, burstState in pairs(props.tireBurstState) do
+                if burstState then
+                    SetVehicleTyreBurst(vehicle, tonumber(wheelIndex), false, 1000.0)
+                end
+            end
+        end
+        if props.tireBurstCompletely then
+            for wheelIndex, burstState in pairs(props.tireBurstCompletely) do
+                if burstState then
+                    SetVehicleTyreBurst(vehicle, tonumber(wheelIndex), true, 1000.0)
+                end
+            end
+        end
+        if props.windowTint then
+            SetVehicleWindowTint(vehicle, props.windowTint)
+        end
+        if props.windowStatus then
+            for windowIndex, smashWindow in pairs(props.windowStatus) do
+                if not smashWindow then SmashVehicleWindow(vehicle, windowIndex) end
+            end
+        end
+        if props.doorStatus then
+            for doorIndex, breakDoor in pairs(props.doorStatus) do
+                if breakDoor then
+                    SetVehicleDoorBroken(vehicle, tonumber(doorIndex), true)
+                end
+            end
+        end
+    end
+end
+
+-- Unused
+
+function Node7Core.Functions.DrawText(x, y, width, height, scale, r, g, b, a, text)
+    -- Use local function instead
+    SetTextFont(4)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, a)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(x - width / 2, y - height / 2 + 0.005)
+end
+
+function Node7Core.Functions.DrawText3D(x, y, z, text)
+    -- Use local function instead
+    SetTextScale(0.35, 0.35)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextColour(255, 255, 255, 215)
+    BeginTextCommandDisplayText('STRING')
+    SetTextCentre(true)
+    AddTextComponentSubstringPlayerName(text)
+    SetDrawOrigin(x, y, z, 0)
+    EndTextCommandDisplayText(0.0, 0.0)
+    local factor = (string.len(text)) / 370
+    DrawRect(0.0, 0.0 + 0.0125, 0.017 + factor, 0.03, 0, 0, 0, 75)
+    ClearDrawOrigin()
+end
+
+---@deprecated use lib.requestAnimDict from ox_lib
+Node7Core.Functions.RequestAnimDict = lib.requestAnimDict
+
+function Node7Core.Functions.GetClosestBone(entity, list)
+    local playerCoords, bone, coords, distance = GetEntityCoords(PlayerPedId())
+    for _, element in pairs(list) do
+        local boneCoords = GetWorldPositionOfEntityBone(entity, element.id or element)
+        local boneDistance = #(playerCoords - boneCoords)
+        if not coords then
+            bone, coords, distance = element, boneCoords, boneDistance
+        elseif distance > boneDistance then
+            bone, coords, distance = element, boneCoords, boneDistance
+        end
+    end
+    if not bone then
+        bone = { id = GetEntityBoneIndexByName(entity, 'bodyshell'), type = 'remains', name = 'bodyshell' }
+        coords = GetWorldPositionOfEntityBone(entity, bone.id)
+        distance = #(coords - playerCoords)
+    end
+    return bone, coords, distance
+end
+
+function Node7Core.Functions.GetBoneDistance(entity, boneType, boneIndex)
+    local bone
+    if boneType == 1 then
+        bone = GetPedBoneIndex(entity, boneIndex)
+    else
+        bone = GetEntityBoneIndexByName(entity, boneIndex)
+    end
+    local boneCoords = GetWorldPositionOfEntityBone(entity, bone)
+    local playerCoords = GetEntityCoords(PlayerPedId())
+    return #(boneCoords - playerCoords)
+end
+
+function Node7Core.Functions.AttachProp(ped, model, boneId, x, y, z, xR, yR, zR, vertex)
+    local modelHash = type(model) == 'string' and joaat(model) or model
+    local bone = GetPedBoneIndex(ped, boneId)
+    Node7Core.Functions.LoadModel(modelHash)
+    local prop = CreateObject(modelHash, 1.0, 1.0, 1.0, 1, 1, 0)
+    AttachEntityToEntity(prop, ped, bone, x, y, z, xR, yR, zR, 1, 1, 0, 1, not vertex and 2 or 0, 1)
+    SetModelAsNoLongerNeeded(modelHash)
+    return prop
+end
+
+function Node7Core.Functions.SpawnClear(coords, radius)
+    if coords then
+        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
+    else
+        coords = GetEntityCoords(PlayerPedId())
+    end
+    local vehicles = GetGamePool('CVehicle')
+    local closeVeh = {}
+    for i = 1, #vehicles, 1 do
+        local vehicleCoords = GetEntityCoords(vehicles[i])
+        local distance = #(vehicleCoords - coords)
+        if distance <= radius then
+            closeVeh[#closeVeh + 1] = vehicles[i]
+        end
+    end
+    if #closeVeh > 0 then return false end
+    return true
+end
+
+---@deprecated use lib.requestAnimDict from ox_lib
+Node7Core.Functions.LoadAnimSet = lib.requestAnimSet
+
+---@deprecated use lib.requestNamedPtfxAsset from ox_lib
+Node7Core.Functions.LoadParticleDictionary = lib.requestNamedPtfxAsset
+
+---@deprecated use ParticleFx natives directly
+function Node7Core.Functions.StartParticleAtCoord(dict, ptName, looped, coords, rot, scale, alpha, color, duration)    coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords or GetEntityCoords(cache.ped)
+
+    lib.requestNamedPtfxAsset(dict)
+    UseParticleFxAssetNextCall(dict)
+    SetPtfxAssetNextCall(dict)
+    local particleHandle
+    if looped then
+        particleHandle = StartParticleFxLoopedAtCoord(ptName, coords.x, coords.y, coords.z, rot.x, rot.y, rot.z, scale or 1.0, false, false, false, false)
+        if color then
+            SetParticleFxLoopedColour(particleHandle, color.r, color.g, color.b, false)
+        end
+        SetParticleFxLoopedAlpha(particleHandle, alpha or 10.0)
+        if duration then
+            Wait(duration)
+            StopParticleFxLooped(particleHandle, false)
+        end
+    else
+        SetParticleFxNonLoopedAlpha(alpha or 1.0)
+        if color then
+            SetParticleFxNonLoopedColour(color.r, color.g, color.b)
+        end
+        StartParticleFxNonLoopedAtCoord(ptName, coords.x, coords.y, coords.z, rot.x, rot.y, rot.z, scale or 1.0, false, false, false)
+    end
+    return particleHandle
+end
+
+---@deprecated use ParticleFx natives directly
+function Node7Core.Functions.StartParticleOnEntity(dict, ptName, looped, entity, bone, offset, rot, scale, alpha, color, evolution, duration)
+    lib.requestNamedPtfxAsset(dict)
+    UseParticleFxAssetNextCall(dict)
+    local particleHandle = nil
+    ---@cast bone number
+    local pedBoneIndex = bone and GetPedBoneIndex(entity, bone) or 0
+    ---@cast bone string
+    local nameBoneIndex = bone and GetEntityBoneIndexByName(entity, bone) or 0
+    local entityType = GetEntityType(entity)
+    local boneID = entityType == 1 and (pedBoneIndex ~= 0 and pedBoneIndex) or (looped and nameBoneIndex ~= 0 and nameBoneIndex)
+    if looped then
+        if boneID then
+            particleHandle = StartParticleFxLoopedOnEntityBone(ptName, entity, offset.x, offset.y, offset.z, rot.x, rot.y, rot.z, boneID, scale or 1.0, false, false, false)
+        else
+            particleHandle = StartParticleFxLoopedOnEntity(ptName, entity, offset.x, offset.y, offset.z, rot.x, rot.y, rot.z, scale or 1.0, false, false, false)
+        end
+        if evolution then
+            SetParticleFxLoopedEvolution(particleHandle, evolution.name, evolution.amount, false)
+        end
+        if color then
+            SetParticleFxLoopedColour(particleHandle, color.r, color.g, color.b, false)
+        end
+        SetParticleFxLoopedAlpha(particleHandle, alpha or 1.0)
+        if duration then
+            Wait(duration)
+            StopParticleFxLooped(particleHandle, false)
+        end
+    else
+        SetParticleFxNonLoopedAlpha(alpha or 1.0)
+        if color then
+            SetParticleFxNonLoopedColour(color.r, color.g, color.b)
+        end
+        if boneID then
+            StartParticleFxNonLoopedOnPedBone(ptName, entity, offset.x, offset.y, offset.z, rot.x, rot.y, rot.z, boneID, scale or 1.0, false, false, false)
+        else
+            StartParticleFxNonLoopedOnEntity(ptName, entity, offset.x, offset.y, offset.z, rot.x, rot.y, rot.z, scale or 1.0, false, false, false)
+        end
+    end
+    return particleHandle
+end
+
+function Node7Core.Functions.GetStreetNametAtCoords(coords)
+    local streetname1, streetname2 = GetStreetNameAtCoord(coords.x, coords.y, coords.z)
+    return { main = GetStreetNameFromHashKey(streetname1), cross = GetStreetNameFromHashKey(streetname2) }
+end
+
+function Node7Core.Functions.GetZoneAtCoords(coords)
+    return GetLabelText(GetNameOfZone(coords))
+end
+
+function Node7Core.Functions.GetCardinalDirection(entity)
+    entity = DoesEntityExist(entity) and entity or PlayerPedId()
+    if DoesEntityExist(entity) then
+        local heading = GetEntityHeading(entity)
+        if ((heading >= 0 and heading < 45) or (heading >= 315 and heading < 360)) then
+            return 'North'
+        elseif (heading >= 45 and heading < 135) then
+            return 'East'
+        elseif (heading >= 135 and heading < 225) then
+            return 'South'
+        elseif (heading >= 225 and heading < 315) then
+            return 'West'
+        end
+    else
+        return 'Cardinal Direction Error'
+    end
+end
+
+function Node7Core.Functions.GetCurrentTime()
+    local obj = {}
+    obj.min = GetClockMinutes()
+    obj.hour = GetClockHours()
+    if obj.hour <= 12 then
+        obj.ampm = 'AM'
+    elseif obj.hour >= 13 then
+        obj.ampm = 'PM'
+        obj.formattedHour = obj.hour - 12
+    end
+    if obj.min <= 9 then
+        obj.formattedMin = '0' .. obj.min
+    end
+    return obj
+end
+
+function Node7Core.Functions.GetGroundZCoord(coords)
+    if not coords then return end
+
+    local retval, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z, 0)
+    if retval then
+        return vector3(coords.x, coords.y, groundZ)
+    else
+        return coords
+    end
+end
+
+function Node7Core.Functions.GetGroundHash(entity)
+    local coords = GetEntityCoords(entity)
+    local num = StartShapeTestCapsule(coords.x, coords.y, coords.z + 4, coords.x, coords.y, coords.z - 2.0, 1, 1, entity, 7)
+    local retval, success, endCoords, surfaceNormal, materialHash, entityHit = GetShapeTestResultEx(num)
+    return materialHash, entityHit, surfaceNormal, endCoords, success, retval
+end

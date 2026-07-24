@@ -1,54 +1,55 @@
 fx_version 'cerulean'
+rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 game 'rdr3'
 
-rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
+lua54 'yes'
 
-author 'NODE7 DEVELOPMENT STUDIOS'
-description 'NODE7 runtime-only RedM framework core'
-version '2.0.0'
-
-ui_page 'html/index.html'
+author 'NODE7 Development Studios'
+description 'node7-core'
+version '2.3.10-node7.2'
 
 shared_scripts {
+    '@ox_lib/init.lua',
+    'config.lua',
     'shared/locale.lua',
     'locale/en.lua',
-    'config.lua',
+    'locale/*.lua',
     'shared/main.lua',
     'shared/items.lua',
     'shared/jobs.lua',
-    'shared/horse.lua',
     'shared/vehicles.lua',
     'shared/gangs.lua',
-    'shared/weapons.lua'
-}
-
-server_scripts {
-    'server/debug.lua',
-    'server/functions.lua',
-    'server/modules/economy.lua',
-    'server/modules/inventory.lua',
-    'server/modules/organizations.lua',
-    'server/modules/stables.lua',
-    'server/player.lua',
-    'server/events.lua',
-    'server/commands.lua',
-    'server/exports.lua'
+    'shared/weapons.lua',
+    'shared/locations.lua',
+    'shared/keybinds.lua'
 }
 
 client_scripts {
+    'client/main.lua',
     'client/functions.lua',
     'client/loops.lua',
     'client/events.lua',
-    'client/notify.js',
-    'client/drawtxt.lua',
-    'client/prompts.lua'
+    'client/drawtext.lua',
+    'client/prompts.lua',
+    'client/pvp.lua'
 }
 
-files {
-    'html/index.html',
-    'html/style.css',
-    'html/drawtext.css',
-    'html/script.js'
+server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/main.lua',
+    'server/functions.lua',
+    'server/database.lua',
+    'server/moneyitems.lua',
+    'server/player.lua',
+    'server/events.lua',
+    'server/commands.lua',
+    'server/exports.lua',
+    'server/compat.lua',
+    'server/debug.lua',
+    'server/versionchecker.lua'
 }
 
-lua54 'yes'
+dependencies {
+    'oxmysql',
+    'ox_lib'
+}

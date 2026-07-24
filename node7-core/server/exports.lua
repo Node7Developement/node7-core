@@ -1,148 +1,336 @@
-local function broadcast(category, key, value)
-    TriggerClientEvent('node7:client:onSharedUpdate', -1, category, key, value)
-    TriggerClientEvent('Node7:Client:OnSharedUpdate', -1, category, key, value)
-    TriggerEvent('node7:server:sharedUpdated', category, key, value)
-end
-
-local function broadcastMultiple(category, values)
-    TriggerClientEvent('node7:client:onSharedUpdateMultiple', -1, category, values)
-    TriggerClientEvent('Node7:Client:OnSharedUpdateMultiple', -1, category, values)
-    TriggerEvent('node7:server:sharedUpdatedMultiple', category, values)
-end
-
-local function addMultiple(values, registry, normalizer, category)
-    if type(values) ~= 'table' then return false, 'invalid_collection' end
-    local staged = {}
-    for name, definition in pairs(values) do
-        if type(name) ~= 'string' then return false, 'invalid_name', definition end
-        if registry[name] then return false, category:lower() .. '_exists', definition end
-        local ok, normalized = pcall(normalizer, name, definition)
-        if not ok then return false, normalized, definition end
-        staged[name] = normalized
+-- Add or change (a) method(s) in the Node7Core.Functions table
+local function SetMethod(methodName, handler)
+    if type(methodName) ~= 'string' then
+        return false, 'invalid_method_name'
     end
-    for name, definition in pairs(staged) do registry[name] = definition end
-    broadcastMultiple(category, staged)
+
+    Node7Core.Functions[methodName] = handler
+
+    TriggerEvent('Node7Core:Server:UpdateObject')
+
     return true, 'success'
 end
 
-exports('GetCoreObject', function() return Node7 end)
-exports('GetSharedObject', function() return Node7Shared end)
-exports('GetItems', function() return Node7Shared.Items end)
-exports('GetItem', function(name) return Node7Shared.Items[name] end)
-exports('GetJobs', function() return Node7Shared.Jobs end)
-exports('GetGangs', function() return Node7Shared.Gangs end)
-exports('GetHorses', function() return Node7Shared.Horses end)
-exports('GetVehicles', function() return Node7Shared.Vehicles end)
-exports('GetWeapons', function() return Node7Shared.Weapons end)
-exports('GetWeaponsByName', function() return Node7Shared.WeaponsByName end)
-exports('GetAmmoTypes', function() return Node7Shared.AmmoTypes end)
+Node7Core.Functions.SetMethod = SetMethod
+exports('SetMethod', SetMethod)
 
-exports('RandomStr', Node7Shared.RandomStr)
-exports('RandomInt', Node7Shared.RandomInt)
-exports('SplitStr', Node7Shared.SplitStr)
-exports('Trim', Node7Shared.Trim)
-exports('Round', Node7Shared.Round)
-
-exports('GetPlayers', function()
-    local sources = {}
-    for source in pairs(Node7.Players) do sources[#sources + 1] = source end
-    return sources
-end)
-
-exports('GetNode7Players', function() return Node7.Players end)
-exports('GetPlayerByCitizenId', function(citizenId)
-    for _, player in pairs(Node7.Players) do
-        if player.PlayerData and player.PlayerData.citizenid == citizenId then return player end
+-- Add or change (a) field(s) in the Node7Core table
+local function SetField(fieldName, data)
+    if type(fieldName) ~= 'string' then
+        return false, 'invalid_field_name'
     end
-end)
 
-exports('GetPlayersOnDuty', function(jobName)
-    local players = {}
-    for source, player in pairs(Node7.Players) do
-        if player.PlayerData and player.PlayerData.job.name == jobName and player.PlayerData.job.onduty then
-            players[#players + 1] = source
+    Node7Core[fieldName] = data
+
+    TriggerEvent('Node7Core:Server:UpdateObject')
+
+    return true, 'success'
+end
+
+Node7Core.Functions.SetField = SetField
+exports('SetField', SetField)
+
+-- Single add job function which should only be used if you planning on adding a single job
+local function AddJob(jobName, job)
+    if type(jobName) ~= 'string' then
+        return false, 'invalid_job_name'
+    end
+
+    if Node7Core.Shared.Jobs[jobName] then
+        return false, 'job_exists'
+    end
+
+    Node7Core.Shared.Jobs[jobName] = job
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Jobs', jobName, job)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.AddJob = AddJob
+exports('AddJob', AddJob)
+
+-- Multiple Add Jobs
+local function AddJobs(jobs)
+    local shouldContinue = true
+    local message = 'success'
+    local errorItem = nil
+
+    for key, value in pairs(jobs) do
+        if type(key) ~= 'string' then
+            message = 'invalid_job_name'
+            shouldContinue = false
+            errorItem = jobs[key]
+            break
         end
+
+        if Node7Core.Shared.Jobs[key] then
+            message = 'job_exists'
+            shouldContinue = false
+            errorItem = jobs[key]
+            break
+        end
+
+        Node7Core.Shared.Jobs[key] = value
     end
-    return players, #players
-end)
 
-exports('GetDutyCount', function(jobName)
-    local count = 0
-    for _, player in pairs(Node7.Players) do
-        if player.PlayerData and player.PlayerData.job.name == jobName and player.PlayerData.job.onduty then count = count + 1 end
+    if not shouldContinue then return false, message, errorItem end
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdateMultiple', -1, 'Jobs', jobs)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, message, nil
+end
+
+Node7Core.Functions.AddJobs = AddJobs
+exports('AddJobs', AddJobs)
+
+-- Single Remove Job
+local function RemoveJob(jobName)
+    if type(jobName) ~= 'string' then
+        return false, 'invalid_job_name'
     end
-    return count
-end)
 
-exports('CreateCallback', Node7.RegisterCallback)
-exports('CreateUseableItem', Node7.RegisterUsableItem)
-exports('CanUseItem', function(itemName) return Node7.UsableItems[itemName] end)
-exports('GetPermissions', function(source)
-    local permissions = {}
-    for name, permission in pairs(Node7Config.Permissions) do permissions[name] = Node7.HasPermission(source, permission) end
-    return permissions
-end)
+    if not Node7Core.Shared.Jobs[jobName] then
+        return false, 'job_not_exists'
+    end
 
-exports('AddItem', function(name, definition)
-    local ok, result = Node7.RegisterItem(name, definition)
-    if ok then broadcast('Items', name, result) end
-    return ok, ok and 'success' or result
-end)
+    Node7Core.Shared.Jobs[jobName] = nil
 
-exports('AddItems', function(items)
-    return addMultiple(items, Node7Items, Node7NormalizeItemDefinition, 'Items')
-end)
-
-exports('AddJob', function(name, definition)
-    local ok, result = Node7.RegisterJob(name, definition)
-    if ok then broadcast('Jobs', name, result) end
-    return ok, ok and 'success' or result
-end)
-
-exports('AddJobs', function(jobs)
-    return addMultiple(jobs, Node7Jobs, Node7NormalizeJobDefinition, 'Jobs')
-end)
-
-exports('AddGang', function(name, definition)
-    local ok, result = Node7.RegisterGang(name, definition)
-    if ok then broadcast('Gangs', name, result) end
-    return ok, ok and 'success' or result
-end)
-
-exports('AddGangs', function(gangs)
-    return addMultiple(gangs, Node7Gangs, Node7NormalizeGangDefinition, 'Gangs')
-end)
-
-exports('AddHorse', function(name, definition)
-    if Node7HorseModels[name] then return false, 'horse_exists' end
-    local ok, normalized = pcall(Node7NormalizeHorseDefinition, name, definition)
-    if not ok then return false, normalized end
-    Node7HorseModels[name] = normalized
-    broadcast('Horses', name, normalized)
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Jobs', jobName, nil)
+    TriggerEvent('Node7Core:Server:UpdateObject')
     return true, 'success'
-end)
+end
 
-exports('AddHorses', function(horses)
-    return addMultiple(horses, Node7HorseModels, Node7NormalizeHorseDefinition, 'Horses')
-end)
+Node7Core.Functions.RemoveJob = RemoveJob
+exports('RemoveJob', RemoveJob)
 
-exports('AddVehicle', function(name, definition)
-    if Node7WagonModels[name] then return false, 'vehicle_exists' end
-    local ok, normalized = pcall(Node7NormalizeWagonDefinition, name, definition)
-    if not ok then return false, normalized end
-    Node7WagonModels[name] = normalized
-    broadcast('Vehicles', name, normalized)
+-- Single Update Job
+local function UpdateJob(jobName, job)
+    if type(jobName) ~= 'string' then
+        return false, 'invalid_job_name'
+    end
+
+    if not Node7Core.Shared.Jobs[jobName] then
+        return false, 'job_not_exists'
+    end
+
+    Node7Core.Shared.Jobs[jobName] = job
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Jobs', jobName, job)
+    TriggerEvent('Node7Core:Server:UpdateObject')
     return true, 'success'
-end)
+end
 
-exports('AddVehicles', function(vehicles)
-    return addMultiple(vehicles, Node7WagonModels, Node7NormalizeWagonDefinition, 'Vehicles')
-end)
+Node7Core.Functions.UpdateJob = UpdateJob
+exports('UpdateJob', UpdateJob)
 
-RegisterNetEvent('node7:server:updateObject', function()
-    TriggerClientEvent('node7:client:updateObject', source)
-end)
+-- Single add item
+local function AddItem(itemName, item)
+    if type(itemName) ~= 'string' then
+        return false, 'invalid_item_name'
+    end
 
-RegisterNetEvent('Node7:Server:UpdateObject', function()
-    TriggerClientEvent('node7:client:updateObject', source)
-end)
+    if Node7Core.Shared.Items[itemName] then
+        return false, 'item_exists'
+    end
+
+    Node7Core.Shared.Items[itemName] = item
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Items', itemName, item)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.AddItem = AddItem
+exports('AddItem', AddItem)
+
+-- Single update item
+local function UpdateItem(itemName, item)
+    if type(itemName) ~= 'string' then
+        return false, 'invalid_item_name'
+    end
+    if not Node7Core.Shared.Items[itemName] then
+        return false, 'item_not_exists'
+    end
+    Node7Core.Shared.Items[itemName] = item
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Items', itemName, item)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.UpdateItem = UpdateItem
+exports('UpdateItem', UpdateItem)
+
+-- Multiple Add Items
+local function AddItems(items)
+    local shouldContinue = true
+    local message = 'success'
+    local errorItem = nil
+
+    for key, value in pairs(items) do
+        if type(key) ~= 'string' then
+            message = 'invalid_item_name'
+            shouldContinue = false
+            errorItem = items[key]
+            break
+        end
+
+        if Node7Core.Shared.Items[key] then
+            message = 'item_exists'
+            shouldContinue = false
+            errorItem = items[key]
+            break
+        end
+
+        Node7Core.Shared.Items[key] = value
+    end
+
+    if not shouldContinue then return false, message, errorItem end
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdateMultiple', -1, 'Items', items)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, message, nil
+end
+
+Node7Core.Functions.AddItems = AddItems
+exports('AddItems', AddItems)
+
+-- Single Remove Item
+local function RemoveItem(itemName)
+    if type(itemName) ~= 'string' then
+        return false, 'invalid_item_name'
+    end
+
+    if not Node7Core.Shared.Items[itemName] then
+        return false, 'item_not_exists'
+    end
+
+    Node7Core.Shared.Items[itemName] = nil
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Items', itemName, nil)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.RemoveItem = RemoveItem
+exports('RemoveItem', RemoveItem)
+
+-- Single Add Gang
+local function AddGang(gangName, gang)
+    if type(gangName) ~= 'string' then
+        return false, 'invalid_gang_name'
+    end
+
+    if Node7Core.Shared.Gangs[gangName] then
+        return false, 'gang_exists'
+    end
+
+    Node7Core.Shared.Gangs[gangName] = gang
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Gangs', gangName, gang)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.AddGang = AddGang
+exports('AddGang', AddGang)
+
+-- Multiple Add Gangs
+local function AddGangs(gangs)
+    local shouldContinue = true
+    local message = 'success'
+    local errorItem = nil
+
+    for key, value in pairs(gangs) do
+        if type(key) ~= 'string' then
+            message = 'invalid_gang_name'
+            shouldContinue = false
+            errorItem = gangs[key]
+            break
+        end
+
+        if Node7Core.Shared.Gangs[key] then
+            message = 'gang_exists'
+            shouldContinue = false
+            errorItem = gangs[key]
+            break
+        end
+
+        Node7Core.Shared.Gangs[key] = value
+    end
+
+    if not shouldContinue then return false, message, errorItem end
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdateMultiple', -1, 'Gangs', gangs)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, message, nil
+end
+
+Node7Core.Functions.AddGangs = AddGangs
+exports('AddGangs', AddGangs)
+
+-- Single Remove Gang
+local function RemoveGang(gangName)
+    if type(gangName) ~= 'string' then
+        return false, 'invalid_gang_name'
+    end
+
+    if not Node7Core.Shared.Gangs[gangName] then
+        return false, 'gang_not_exists'
+    end
+
+    Node7Core.Shared.Gangs[gangName] = nil
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Gangs', gangName, nil)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.RemoveGang = RemoveGang
+exports('RemoveGang', RemoveGang)
+
+-- Single Update Gang
+local function UpdateGang(gangName, gang)
+    if type(gangName) ~= 'string' then
+        return false, 'invalid_gang_name'
+    end
+
+    if not Node7Core.Shared.Gangs[gangName] then
+        return false, 'gang_not_exists'
+    end
+
+    Node7Core.Shared.Gangs[gangName] = gang
+
+    TriggerClientEvent('Node7Core:Client:OnSharedUpdate', -1, 'Gangs', gangName, gang)
+    TriggerEvent('Node7Core:Server:UpdateObject')
+    return true, 'success'
+end
+
+Node7Core.Functions.UpdateGang = UpdateGang
+exports('UpdateGang', UpdateGang)
+
+local resourceName = GetCurrentResourceName()
+local function GetCoreVersion(InvokingResource)
+    local resourceVersion = GetResourceMetadata(resourceName, 'version')
+    if InvokingResource and InvokingResource ~= '' then
+        print(('%s called rsgcore version check: %s'):format(InvokingResource or 'Unknown Resource', resourceVersion))
+    end
+    return resourceVersion
+end
+
+Node7Core.Functions.GetCoreVersion = GetCoreVersion
+exports('GetCoreVersion', GetCoreVersion)
+
+local function ExploitBan(playerId, origin)
+    local name = GetPlayerName(playerId)
+    MySQL.insert('INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby) VALUES (?, ?, ?, ?, ?, ?, ?)', {
+        name,
+        Node7Core.Functions.GetIdentifier(playerId, 'license'),
+        Node7Core.Functions.GetIdentifier(playerId, 'discord'),
+        Node7Core.Functions.GetIdentifier(playerId, 'ip'),
+        origin,
+        2147483647,
+        'Anti Cheat'
+    })
+    DropPlayer(playerId, Lang:t('info.exploit_banned', { discord = Node7Core.Config.Server.Discord }))
+    TriggerEvent('node7-log:server:CreateLog', 'anticheat', 'Anti-Cheat', 'red', name .. ' has been banned for exploiting ' .. origin, true)
+end
+
+exports('ExploitBan', ExploitBan)

@@ -1,126 +1,191 @@
 Node7Shared = Node7Shared or {}
-
 Node7Shared.Gangs = {
-    ['none'] = {
+    none = {
         label = 'No Gang',
         grades = {
             ['0'] = {
                 name = 'Unaffiliated'
-            },
-        },
+            }
+        }
     },
-    ['blackwater_raiders'] = {
-        label = 'Blackwater Raiders',
-        grades = {
+    odriscoll = {
+		label = 'O Driscoll Boys',
+		grades = {
             ['0'] = {
-                name = 'Associate'
+                name = 'Recruit'
             },
-            ['1'] = {
-                name = 'Member'
-            },
-            ['2'] = {
+			['1'] = {
                 name = 'Enforcer'
             },
-            ['3'] = {
-                name = 'Underboss'
+			['2'] = {
+                name = 'Shot Caller'
             },
-            ['4'] = {
+			['3'] = {
                 name = 'Boss',
-                isboss = true
+				isboss = true
             },
-        },
-    },
-    ['grizzlies_outlaws'] = {
-        label = 'Grizzlies Outlaws',
-        grades = {
+        }
+	},
+    lemoyne = {
+		label = 'Lemoyne Raiders',
+		grades = {
             ['0'] = {
-                name = 'Associate'
+                name = 'Recruit'
             },
-            ['1'] = {
-                name = 'Member'
-            },
-            ['2'] = {
+			['1'] = {
                 name = 'Enforcer'
             },
-            ['3'] = {
-                name = 'Underboss'
+			['2'] = {
+                name = 'Shot Caller'
             },
-            ['4'] = {
+			['3'] = {
                 name = 'Boss',
-                isboss = true
+				isboss = true
             },
-        },
-    },
-    ['lemoyne_riders'] = {
-        label = 'Lemoyne Riders',
-        grades = {
+        }
+	},
+    murfree = {
+		label = 'Murfree Brood',
+		grades = {
             ['0'] = {
-                name = 'Associate'
+                name = 'Recruit'
             },
-            ['1'] = {
-                name = 'Member'
-            },
-            ['2'] = {
+			['1'] = {
                 name = 'Enforcer'
             },
-            ['3'] = {
-                name = 'Underboss'
+			['2'] = {
+                name = 'Shot Caller'
             },
-            ['4'] = {
+			['3'] = {
                 name = 'Boss',
-                isboss = true
+				isboss = true
             },
-        },
-    },
-    ['new_austin_renegades'] = {
-        label = 'New Austin Renegades',
-        grades = {
+        }
+	},
+    skinner = {
+		label = 'Skinner Brothers',
+		grades = {
             ['0'] = {
-                name = 'Associate'
+                name = 'Recruit'
             },
-            ['1'] = {
-                name = 'Member'
-            },
-            ['2'] = {
+			['1'] = {
                 name = 'Enforcer'
             },
-            ['3'] = {
-                name = 'Underboss'
+			['2'] = {
+                name = 'Shot Caller'
             },
-            ['4'] = {
+			['3'] = {
                 name = 'Boss',
-                isboss = true
+				isboss = true
             },
-        },
-    },
-    ['cumberland_wolves'] = {
-        label = 'Cumberland Wolves',
-        grades = {
+        }
+	},
+    laramie = {
+		label = 'Laramie Gang',
+		grades = {
             ['0'] = {
-                name = 'Associate'
+                name = 'Recruit'
             },
-            ['1'] = {
-                name = 'Member'
-            },
-            ['2'] = {
+			['1'] = {
                 name = 'Enforcer'
             },
-            ['3'] = {
-                name = 'Underboss'
+			['2'] = {
+                name = 'Shot Caller'
             },
-            ['4'] = {
+			['3'] = {
                 name = 'Boss',
-                isboss = true
+				isboss = true
             },
-        },
-    },
+        }
+	},
+    dellobo = {
+		label = 'Del Lobo Gang',
+		grades = {
+            ['0'] = {
+                name = 'Recruit'
+            },
+			['1'] = {
+                name = 'Enforcer'
+            },
+			['2'] = {
+                name = 'Shot Caller'
+            },
+			['3'] = {
+                name = 'Boss',
+				isboss = true
+            },
+        }
+	},
+    night = {
+		label = 'Night Folk',
+		grades = {
+            ['0'] = {
+                name = 'Recruit'
+            },
+			['1'] = {
+                name = 'Enforcer'
+            },
+			['2'] = {
+                name = 'Shot Caller'
+            },
+			['3'] = {
+                name = 'Boss',
+				isboss = true
+            },
+        }
+	},
+    foreman = {
+		label = 'Foreman Brothers',
+		grades = {
+            ['0'] = {
+                name = 'Recruit'
+            },
+			['1'] = {
+                name = 'Enforcer'
+            },
+			['2'] = {
+                name = 'Shot Caller'
+            },
+			['3'] = {
+                name = 'Boss',
+				isboss = true
+            },
+        }
+	},
+    anderson = {
+		label = 'Anderson Boys',
+		grades = {
+            ['0'] = {
+                name = 'Recruit'
+            },
+			['1'] = {
+                name = 'Enforcer'
+            },
+			['2'] = {
+                name = 'Shot Caller'
+            },
+			['3'] = {
+                name = 'Boss',
+				isboss = true
+            },
+        }
+	},
+    watson = {
+		label = 'Watson Boys',
+		grades = {
+            ['0'] = {
+                name = 'Recruit'
+            },
+			['1'] = {
+                name = 'Enforcer'
+            },
+			['2'] = {
+                name = 'Shot Caller'
+            },
+			['3'] = {
+                name = 'Boss',
+				isboss = true
+            },
+        }
+	},
 }
-
-Node7Gangs = Node7Shared.Gangs
-
-function Node7NormalizeGangDefinition(name, definition)
-    assert(type(name) == 'string' and name:match('^[%w_]+$'), 'Invalid NODE7 gang name')
-    assert(type(definition) == 'table' and type(definition.label) == 'string', ('Gang %s requires a label'):format(name))
-    assert(type(definition.grades) == 'table' and (definition.grades['0'] or definition.grades[0]), ('Gang %s requires grade 0'):format(name))
-    return definition
-end

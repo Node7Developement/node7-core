@@ -1,10 +1,5 @@
-# NODE7 DEVELOPMENT STUDIOS | node7-core runtime-only example
-
-# Start node7-core before player persistence and multicharacter.
-# oxmysql is not a node7-core dependency; it is listed here only because
-# node7-players normally needs it.
-
+ensure ox_lib
 ensure oxmysql
 ensure node7-core
-ensure node7-players
-ensure node7-multicharacter
+
+exec resources/[node7]/node7-core/recipe/permissions.cfg

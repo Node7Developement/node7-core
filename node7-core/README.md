@@ -1,105 +1,31 @@
-# NODE7 Core
+# node7-core
 
-Runtime-only RedM framework core for NODE7 DEVELOPMENT STUDIOS.
+NODE7 RedM framework core built in the same resource format as `node7-core`, with ox_lib and oxmysql support.
 
-This resource does **not** own player SQL, citizen IDs, users, character slots, or multicharacter logic. It only accepts a loaded `PlayerData` table from `node7-players` and provides runtime framework functions around that active session.
-
-## Correct ownership
-
-- `node7-core`: runtime framework functions only
-- `node7-players`: database, citizen IDs, character slots, create/list/load/save/delete
-- `node7-multicharacter`: fullscreen UI/selection only
-
-## Recipe support
-
-This core is compatible with the clean NODE7 txAdmin recipe layout.
-
-Place it here after the recipe creates the folders:
-
-```text
-resources/[node7-core]/node7-core
-```
-
-Start order:
+## Required start order
 
 ```cfg
+ensure ox_lib
 ensure oxmysql
 ensure node7-core
-ensure node7-players
-ensure node7-multicharacter
 ```
 
-`oxmysql` is required by `node7-players`, not by `node7-core`.
-
-## What this core does
-
-- registers externally loaded players
-- unloads externally loaded players
-- refreshes QBCore-style `PlayerData`
-- handles money
-- handles runtime inventory
-- handles runtime weapons
-- handles runtime horses and wagons
-- handles jobs, gangs, duty, permissions, callbacks, commands, notifications, progress bars, draw text, and prompts
-- emits save requests back to `node7-players`
-
-## What this core does not do
-
-- no SQL files
-- no `oxmysql` dependency
-- no `users` table
-- no `characters` table
-- no citizen ID generation
-- no character creation
-- no character selector
-- no account creation on connection
-
-## Required player-manager contract
-
-`node7-players` must load/create/select the character, then call:
+## Main export
 
 ```lua
-exports['node7-core']:RegisterExternalPlayer(source, PlayerData)
+local Node7Core = exports['node7-core']:GetCoreObject()
 ```
 
-When unloading:
+## Included
 
-```lua
-exports['node7-core']:UnloadExternalPlayer(source)
-```
-
-When saving is needed, this core emits:
-
-```lua
-TriggerEvent('node7:server:externalSaveRequested', source, citizenid, PlayerData)
-```
-
-`node7-players` should listen for that event and persist the data to the clean `players` table.
-
-## Core exports
-
-Common exports:
-
-- `GetCoreObject()`
-- `GetPlayer(source)`
-- `GetPlayers()`
-- `GetPlayerByCitizenId(citizenid)`
-- `RegisterExternalPlayer(source, PlayerData)`
-- `UnloadExternalPlayer(source, save)`
-- `RefreshPlayerData(source, includeInventory, sendClient)`
-- `SavePlayer(source)`
-- `GetMoney(source, account)`
-- `AddMoney(source, account, amount, reason)`
-- `RemoveMoney(source, account, amount, reason)`
-- `SetMoney(source, account, amount, reason)`
-- `GiveItem(source, item, amount, metadata, slot)`
-- `RemoveItem(source, item, amount, slot)`
-- `SetJob(source, job, grade)`
-- `SetGang(source, gang, grade)`
-- `SetDuty(source, state)`
+- NODE7-core style folder layout.
+- `@ox_lib/init.lua` shared import.
+- ox_lib notifications/text UI usage.
+- oxmysql player/bans database support.
+- NODE7 naming/events/permissions.
+- Compatibility exports used by current NODE7 player resources.
+- Recipe files, GitHub workflow, `.gitignore`, `.gitattributes`, `.editorconfig`.
 
 ## Notes
 
-Runtime inventory, weapons, horses, and wagons are stored inside the active `PlayerData` object. Persistence belongs to `node7-players`.
-
-Do not add player SQL back into this core.
+This core does not require horses, spawnselect, charselect, clothing, or menu-base to start.
