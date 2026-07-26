@@ -10,6 +10,18 @@
 
 NODE7's RedM core with core-owned cash, bank, gold, blood-money, character metadata, ACE-protected administration, inventory compatibility, and a compact top-left account display.
 
+
+
+
+
+
+
+
+
+
+<img width="399" height="246" alt="corehudd" src="https://github.com/user-attachments/assets/a4b66e6f-e998-4da0-874f-54348d2a7ef7" />
+
+
 ## Core access
 
 ```lua
