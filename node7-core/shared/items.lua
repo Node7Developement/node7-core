@@ -197,41 +197,61 @@ Node7Shared.Items = {
     -----------------------------------------------
     -- AMMO
     -----------------------------------------------
-    ammo_arrow          = { name = 'ammo_arrow',          label = 'Arrow (N)', weight = 200, type = 'item', image = 'ammo_arrow.png',          unique = false, useable = true, shouldClose = true, description = 'Arrow' },
-    ammo_arrow_small    = { name = 'ammo_arrow_small',    label = 'Arrow (S)', weight = 200, type = 'item', image = 'ammo_arrow.png',          unique = false, useable = true, shouldClose = true, description = 'Arrow' },
-    ammo_arrow_fire     = { name = 'ammo_arrow_fire',     label = 'Arrow (F)', weight = 200, type = 'item', image = 'ammo_arrow_fire.png',     unique = false, useable = true, shouldClose = true, description = 'Arrow' },
-    ammo_arrow_poison   = { name = 'ammo_arrow_poison',   label = 'Arrow (P)', weight = 200, type = 'item', image = 'ammo_arrow_poison.png',   unique = false, useable = true, shouldClose = true, description = 'Arrow' },
-    ammo_arrow_dynamite = { name = 'ammo_arrow_dynamite', label = 'Arrow (D)', weight = 200, type = 'item', image = 'ammo_arrow_dynamite.png', unique = false, useable = true, shouldClose = true, description = 'Arrow' },
 
-    -----------------------------------------------
-    -- AMMO BOXES
-    -----------------------------------------------
-    ammo_box_revolver                    = { name = 'ammo_box_revolver',                    label = 'Ammo Box Revolver (N)',             weight = 100, type = 'item', image = 'ammo_box_revolver.png',                    unique = false, useable = true, shouldClose = true, description = 'Revolver Ammo Box' },
-    ammo_box_revolver_express            = { name = 'ammo_box_revolver_express',            label = 'Ammo Box Revolver (E)',             weight = 100, type = 'item', image = 'ammo_box_revolver_express.png',            unique = false, useable = true, shouldClose = true, description = 'Revolver Ammo Box Express' },
-    ammo_box_revolver_explosive          = { name = 'ammo_box_revolver_explosive',          label = 'Ammo Box Revolver (EE)',            weight = 100, type = 'item', image = 'ammo_box_revolver_explosive.png',          unique = false, useable = true, shouldClose = true, description = 'Revolver Ammo Box Express Explosive' },
-    ammo_box_revolver_velocity           = { name = 'ammo_box_revolver_velocity',           label = 'Ammo Box Revolver (HV)',            weight = 100, type = 'item', image = 'ammo_box_revolver_velocity.png',           unique = false, useable = true, shouldClose = true, description = 'Revolver Ammo Box High Velocity' },
-    ammo_box_revolver_splitpoint         = { name = 'ammo_box_revolver_splitpoint',         label = 'Ammo Box Revolver (SP)',            weight = 100, type = 'item', image = 'ammo_box_revolver_splitpoint.png',         unique = false, useable = true, shouldClose = true, description = 'Revolver Ammo Box Split Point' },
-    ammo_box_pistol                      = { name = 'ammo_box_pistol',                      label = 'Ammo Box Pistol (N)',               weight = 100, type = 'item', image = 'ammo_box_pistol.png',                      unique = false, useable = true, shouldClose = true, description = 'Pistol Ammo Box' },
-    ammo_box_pistol_express              = { name = 'ammo_box_pistol_express',              label = 'Ammo Box Pistol (E)',               weight = 100, type = 'item', image = 'ammo_box_pistol_express.png',              unique = false, useable = true, shouldClose = true, description = 'Pistol Ammo Box Express' },
-    ammo_box_pistol_explosive            = { name = 'ammo_box_pistol_explosive',            label = 'Ammo Box Pistol (EE)',              weight = 100, type = 'item', image = 'ammo_box_pistol_explosive.png',            unique = false, useable = true, shouldClose = true, description = 'Pistol Ammo Box Express Explosive' },
-    ammo_box_pistol_velocity             = { name = 'ammo_box_pistol_velocity',             label = 'Ammo Box Pistol (HV)',              weight = 100, type = 'item', image = 'ammo_box_pistol_velocity.png',             unique = false, useable = true, shouldClose = true, description = 'Pistol Ammo Box High Velocity' },
-    ammo_box_pistol_splitpoint           = { name = 'ammo_box_pistol_splitpoint',           label = 'Ammo Box Pistol (SP)',              weight = 100, type = 'item', image = 'ammo_box_pistol_splitpoint.png',           unique = false, useable = true, shouldClose = true, description = 'Pistol Ammo Box Split Point' },
-    ammo_box_repeater                    = { name = 'ammo_box_repeater',                    label = 'Ammo Box Repeater (N)',             weight = 100, type = 'item', image = 'ammo_box_repeater.png',                    unique = false, useable = true, shouldClose = true, description = 'Repeater Ammo Box' },
-    ammo_box_repeater_express            = { name = 'ammo_box_repeater_express',            label = 'Ammo Box Repeater (E)',             weight = 100, type = 'item', image = 'ammo_box_repeater_express.png',            unique = false, useable = true, shouldClose = true, description = 'Repeater Ammo Box Express' },
-    ammo_box_repeater_explosive          = { name = 'ammo_box_repeater_explosive',          label = 'Ammo Box Repeater (EE)',            weight = 100, type = 'item', image = 'ammo_box_repeater_explosive.png',          unique = false, useable = true, shouldClose = true, description = 'Repeater Ammo Box Express Explosive' },
-    ammo_box_repeater_velocity           = { name = 'ammo_box_repeater_velocity',           label = 'Ammo Box Repeater (HV)',            weight = 100, type = 'item', image = 'ammo_box_repeater_velocity.png',           unique = false, useable = true, shouldClose = true, description = 'Repeater Ammo Box High Velocity' },
-    ammo_box_repeater_splitpoint         = { name = 'ammo_box_repeater_splitpoint',         label = 'Ammo Box Repeater (SP)',            weight = 100, type = 'item', image = 'ammo_box_repeater_splitpoint.png',         unique = false, useable = true, shouldClose = true, description = 'Repeater Ammo Box Split Point' },
-    ammo_box_rifle                       = { name = 'ammo_box_rifle',                       label = 'Ammo Box Rifle (N)',                weight = 100, type = 'item', image = 'ammo_box_rifle.png',                       unique = false, useable = true, shouldClose = true, description = 'Rifle Ammo Box' },
-    ammo_box_rifle_express               = { name = 'ammo_box_rifle_express',               label = 'Ammo Box Rifle (E)',                weight = 100, type = 'item', image = 'ammo_box_rifle_express.png',               unique = false, useable = true, shouldClose = true, description = 'Rifle Ammo Box Express' },
-    ammo_box_rifle_explosive             = { name = 'ammo_box_rifle_explosive',             label = 'Ammo Box Rifle (EE)',               weight = 100, type = 'item', image = 'ammo_box_rifle_explosive.png',             unique = false, useable = true, shouldClose = true, description = 'Rifle Ammo Box Express Explosive' },
-    ammo_box_rifle_velocity              = { name = 'ammo_box_rifle_velocity',              label = 'Ammo Box Rifle (HV)',               weight = 100, type = 'item', image = 'ammo_box_rifle_velocity.png',              unique = false, useable = true, shouldClose = true, description = 'Rifle Ammo Box High Velocity' },
-    ammo_box_rifle_splitpoint            = { name = 'ammo_box_rifle_splitpoint',            label = 'Ammo Box Rifle (SP)',               weight = 100, type = 'item', image = 'ammo_box_rifle_splitpoint.png',            unique = false, useable = true, shouldClose = true, description = 'Rifle Ammo Box Split Point' },
-    ammo_box_shotgun                     = { name = 'ammo_box_shotgun',                     label = 'Ammo Box Shotgun (N)',              weight = 100, type = 'item', image = 'ammo_box_shotgun.png',                     unique = false, useable = true, shouldClose = true, description = 'Shotgun Ammo Box' },
-    ammo_box_shotgun_buckshot_incendiary = { name = 'ammo_box_shotgun_buckshot_incendiary', label = 'Ammo Box Shotgun (BI)',             weight = 100, type = 'item', image = 'ammo_box_shotgun_buckshot_incendiary.png', unique = false, useable = true, shouldClose = true, description = 'Shotgun Ammo Box' },
-    ammo_box_shotgun_slug                = { name = 'ammo_box_shotgun_slug',                label = 'Ammo Box Shotgun (S)',              weight = 100, type = 'item', image = 'ammo_box_shotgun_slug.png',                unique = false, useable = true, shouldClose = true, description = 'Shotgun Ammo Box' },
-    ammo_box_shotgun_slug_explosive      = { name = 'ammo_box_shotgun_slug_explosive',      label = 'Ammo Box Shotgun (SE)',             weight = 100, type = 'item', image = 'ammo_box_shotgun_slug_explosive.png',      unique = false, useable = true, shouldClose = true, description = 'Shotgun Ammo Box' },
-    ammo_box_rifle_elephant              = { name = 'ammo_box_rifle_elephant',              label = 'Ammo Box Elephant Rifle (N)',       weight = 100, type = 'item', image = 'ammo_box_rifle_elephant.png',              unique = false, useable = true, shouldClose = true, description = 'Elephant Rifle Ammo Box' },
-    ammo_box_varmint                     = { name = 'ammo_box_varmint',                     label = 'Ammo Box Varmint Rifle (N)',        weight = 100, type = 'item', image = 'ammo_box_rifle.png',                       unique = false, useable = true, shouldClose = true, description = 'Varmint Rifle Ammo Box' },
-    ammo_box_varmint_tranquilizer        = { name = 'ammo_box_varmint_tranquilizer',        label = 'Ammo Box Varmint Tranquilizer (N)', weight = 100, type = 'item', image = 'ammo_box_rifle.png',                       unique = false, useable = true, shouldClose = true, description = 'Varmint Rifle Tranquilizer Ammo Box' },
+    -- revolver
+    ammo_revolver            = { name = 'ammo_revolver',            label = 'Revolver Ammo (N)',  weight = 100, type = 'item', image = 'ammo_revolver.png',            unique = false, useable = true, shouldClose = true, description = 'Standard Revolver Ammo' },
+    ammo_revolver_express    = { name = 'ammo_revolver_express',    label = 'Revolver Ammo (E)',  weight = 100, type = 'item', image = 'ammo_revolver_express.png',    unique = false, useable = true, shouldClose = true, description = 'Express Revolver Ammo' },
+    ammo_revolver_explosive  = { name = 'ammo_revolver_explosive',  label = 'Revolver Ammo (EE)', weight = 100, type = 'item', image = 'ammo_revolver_explosive.png',  unique = false, useable = true, shouldClose = true, description = 'Explosive Revolver Ammo' },
+    ammo_revolver_velocity   = { name = 'ammo_revolver_velocity',   label = 'Revolver Ammo (HV)', weight = 100, type = 'item', image = 'ammo_revolver_velocity.png',   unique = false, useable = true, shouldClose = true, description = 'High Velocity Revolver Ammo' },
+    ammo_revolver_splitpoint = { name = 'ammo_revolver_splitpoint', label = 'Revolver Ammo (SP)', weight = 100, type = 'item', image = 'ammo_revolver_splitpoint.png', unique = false, useable = true, shouldClose = true, description = 'Split Point Revolver Ammo' },
+
+    -- pistol
+    ammo_pistol            = { name = 'ammo_pistol',            label = 'Pistol Ammo (N)',  weight = 100, type = 'item', image = 'ammo_pistol.png',            unique = false, useable = true, shouldClose = true, description = 'Standard Pistol Ammo' },
+    ammo_pistol_express    = { name = 'ammo_pistol_express',    label = 'Pistol Ammo (E)',  weight = 100, type = 'item', image = 'ammo_pistol_express.png',    unique = false, useable = true, shouldClose = true, description = 'Express Pistol Ammo' },
+    ammo_pistol_explosive  = { name = 'ammo_pistol_explosive',  label = 'Pistol Ammo (EE)', weight = 100, type = 'item', image = 'ammo_pistol_explosive.png',  unique = false, useable = true, shouldClose = true, description = 'Explosive Pistol Ammo' },
+    ammo_pistol_velocity   = { name = 'ammo_pistol_velocity',   label = 'Pistol Ammo (HV)', weight = 100, type = 'item', image = 'ammo_pistol_velocity.png',   unique = false, useable = true, shouldClose = true, description = 'High Velocity Pistol Ammo' },
+    ammo_pistol_splitpoint = { name = 'ammo_pistol_splitpoint', label = 'Pistol Ammo (SP)', weight = 100, type = 'item', image = 'ammo_pistol_splitpoint.png', unique = false, useable = true, shouldClose = true, description = 'Split Point Pistol Ammo' },
+
+    -- repeater
+    ammo_repeater            = { name = 'ammo_repeater',            label = 'Repeater Ammo (N)',  weight = 100, type = 'item', image = 'ammo_repeater.png',            unique = false, useable = true, shouldClose = true, description = 'Standard Repeater Ammo' },
+    ammo_repeater_express    = { name = 'ammo_repeater_express',    label = 'Repeater Ammo (E)',  weight = 100, type = 'item', image = 'ammo_repeater_express.png',    unique = false, useable = true, shouldClose = true, description = 'Express Repeater Ammo' },
+    ammo_repeater_explosive  = { name = 'ammo_repeater_explosive',  label = 'Repeater Ammo (EE)', weight = 100, type = 'item', image = 'ammo_repeater_explosive.png',  unique = false, useable = true, shouldClose = true, description = 'Explosive Repeater Ammo' },
+    ammo_repeater_velocity   = { name = 'ammo_repeater_velocity',   label = 'Repeater Ammo (HV)', weight = 100, type = 'item', image = 'ammo_repeater_velocity.png',   unique = false, useable = true, shouldClose = true, description = 'High Velocity Repeater Ammo' },
+    ammo_repeater_splitpoint = { name = 'ammo_repeater_splitpoint', label = 'Repeater Ammo (SP)', weight = 100, type = 'item', image = 'ammo_repeater_splitpoint.png', unique = false, useable = true, shouldClose = true, description = 'Split Point Repeater Ammo' },
+
+    -- rifle
+    ammo_rifle            = { name = 'ammo_rifle',            label = 'Rifle Ammo (N)',  weight = 100, type = 'item', image = 'ammo_rifle.png',            unique = false, useable = true, shouldClose = true, description = 'Standard Rifle Ammo' },
+    ammo_rifle_express    = { name = 'ammo_rifle_express',    label = 'Rifle Ammo (E)',  weight = 100, type = 'item', image = 'ammo_rifle_express.png',    unique = false, useable = true, shouldClose = true, description = 'Express Rifle Ammo' },
+    ammo_rifle_explosive  = { name = 'ammo_rifle_explosive',  label = 'Rifle Ammo (EE)', weight = 100, type = 'item', image = 'ammo_rifle_explosive.png',  unique = false, useable = true, shouldClose = true, description = 'Explosive Rifle Ammo' },
+    ammo_rifle_velocity   = { name = 'ammo_rifle_velocity',   label = 'Rifle Ammo (HV)', weight = 100, type = 'item', image = 'ammo_rifle_velocity.png',   unique = false, useable = true, shouldClose = true, description = 'High Velocity Rifle Ammo' },
+    ammo_rifle_splitpoint = { name = 'ammo_rifle_splitpoint', label = 'Rifle Ammo (SP)', weight = 100, type = 'item', image = 'ammo_rifle_splitpoint.png', unique = false, useable = true, shouldClose = true, description = 'Split Point Rifle Ammo' },
+
+    -- shotgun
+    ammo_shotgun                     = { name = 'ammo_shotgun',                     label = 'Shotgun Ammo (N)',  weight = 100, type = 'item', image = 'ammo_shotgun.png',                     unique = false, useable = true, shouldClose = true, description = 'Standard Shotgun Buckshot' },
+    ammo_shotgun_buckshot_incendiary = { name = 'ammo_shotgun_buckshot_incendiary', label = 'Shotgun Ammo (BI)', weight = 100, type = 'item', image = 'ammo_shotgun_buckshot_incendiary.png', unique = false, useable = true, shouldClose = true, description = 'Incendiary Shotgun Buckshot' },
+    ammo_shotgun_slug                = { name = 'ammo_shotgun_slug',                label = 'Shotgun Ammo (S)',  weight = 100, type = 'item', image = 'ammo_shotgun_slug.png',                unique = false, useable = true, shouldClose = true, description = 'Shotgun Slug Ammo' },
+    ammo_shotgun_slug_explosive      = { name = 'ammo_shotgun_slug_explosive',      label = 'Shotgun Ammo (SE)', weight = 100, type = 'item', image = 'ammo_shotgun_slug_explosive.png',      unique = false, useable = true, shouldClose = true, description = 'Explosive Shotgun Slug Ammo' },
+
+    -- elephant rifle
+    ammo_rifle_elephant = { name = 'ammo_rifle_elephant', label = 'Elephant Rifle Ammo (N)', weight = 100, type = 'item', image = 'ammo_rifle_elephant.png', unique = false, useable = true, shouldClose = true, description = 'Elephant Rifle Ammo' },
+
+    -- varmint rifle
+    ammo_varmint              = { name = 'ammo_varmint',              label = 'Varmint Ammo (N)',  weight = 100, type = 'item', image = 'ammo_varmint.png',              unique = false, useable = true, shouldClose = true, description = 'Standard Varmint Rifle Ammo' },
+    ammo_varmint_tranquilizer = { name = 'ammo_varmint_tranquilizer', label = 'Varmint Ammo (T)',  weight = 100, type = 'item', image = 'ammo_varmint_tranquilizer.png', unique = false, useable = true, shouldClose = true, description = 'Varmint Rifle Tranquilizer Ammo' },
+
+    -- arrows
+    ammo_arrow          = { name = 'ammo_arrow',          label = 'Arrow (N)',  weight = 200, type = 'item', image = 'ammo_arrow.png',          unique = false, useable = true, shouldClose = true, description = 'Standard Arrow' },
+    ammo_arrow_small    = { name = 'ammo_arrow_small',    label = 'Arrow (SG)', weight = 200, type = 'item', image = 'ammo_arrow_small.png',    unique = false, useable = true, shouldClose = true, description = 'Small Game Arrow' },
+    ammo_arrow_improved = { name = 'ammo_arrow_improved', label = 'Arrow (I)',  weight = 200, type = 'item', image = 'ammo_arrow_improved.png', unique = false, useable = true, shouldClose = true, description = 'Improved Arrow' },
+    ammo_arrow_fire     = { name = 'ammo_arrow_fire',     label = 'Arrow (F)',  weight = 200, type = 'item', image = 'ammo_arrow_fire.png',     unique = false, useable = true, shouldClose = true, description = 'Fire Arrow' },
+    ammo_arrow_poison   = { name = 'ammo_arrow_poison',   label = 'Arrow (P)',  weight = 200, type = 'item', image = 'ammo_arrow_poison.png',   unique = false, useable = true, shouldClose = true, description = 'Poison Arrow' },
+    ammo_arrow_dynamite = { name = 'ammo_arrow_dynamite', label = 'Arrow (D)',  weight = 200, type = 'item', image = 'ammo_arrow_dynamite.png', unique = false, useable = true, shouldClose = true, description = 'Dynamite Arrow' },
+
+
+
+
+
+
+
 
 }

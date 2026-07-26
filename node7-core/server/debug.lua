@@ -32,7 +32,7 @@ RegisterServerEvent('Node7Core:DebugSomething', function(tbl, indent, resource)
 end)
 
 function Node7Core.Debug(tbl, indent)
-    TriggerEvent('Node7Core:DebugSomething', tbl, indent, GetInvokingResource() or 'qb-core')
+    TriggerEvent('Node7Core:DebugSomething', tbl, indent, GetInvokingResource() or 'node7-core')
 end
 
 function Node7Core.ShowError(resource, msg)

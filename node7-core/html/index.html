@@ -3,33 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NODE7 Core</title>
+    <title>NODE7 Notifications</title>
+    <style>
+        /* Critical NUI transparency: prevents a black frame before style.css loads. */
+        html, body, #notifications {
+            background: transparent !important;
+            background-color: rgba(0, 0, 0, 0) !important;
+        }
+        body:not(.nui-active) {
+            visibility: hidden !important;
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="drawtext.css">
 </head>
 <body>
-    <aside id="hud" class="hud hidden">
-        <div><small>CASH</small><strong id="cash">$0</strong></div>
-        <div><small>BANK</small><strong id="bank">$0</strong></div>
-        <div><small>GOLD</small><strong id="gold">0</strong></div>
-        <div><small>ROLE</small><strong id="job">UNEMPLOYED</strong></div>
-    </aside>
-
-    <section id="inventory" class="panel inventory-panel hidden">
-        <header><div><small>NODE7</small><h2>Inventory</h2></div><button id="close-inventory">Close</button></header>
-        <div class="inventory-stats"><span id="inventory-weight">0 / 0</span><span id="inventory-slots">0 slots</span></div>
-        <div id="inventory-grid" class="inventory-grid"></div>
-    </section>
-
-    <div id="notifications" class="notifications"></div>
-    <div id="drawtext" class="drawtext hidden"></div>
-
-    <div id="progress" class="progress hidden">
-        <div class="progress-label" id="progress-label">Working...</div>
-        <div class="progress-track"><span id="progress-fill"></span></div>
-        <small id="progress-help"></small>
-    </div>
-
-    <script src="script.js"></script>
+    <main id="notifications" class="notifications" aria-live="polite" aria-atomic="false"></main>
+    <template id="notification-template">
+        <section class="notification" role="status">
+            <div class="notification__smoke" aria-hidden="true"></div>
+            <div class="notification__portrait-wrap" aria-hidden="true">
+                <img class="notification__portrait" src="images/default-portrait.png" alt="">
+            </div>
+            <div class="notification__content">
+                <div class="notification__title"></div>
+                <div class="notification__message"></div>
+            </div>
+            <div class="notification__timer" aria-hidden="true"></div>
+        </section>
+    </template>
+    <script src="app.js"></script>
 </body>
 </html>

@@ -89,14 +89,14 @@ Node7Core.Commands.Add('tp', Lang:t('command.tp.help'), { { name = Lang:t('comma
                 local coords = GetEntityCoords(target)
                 TriggerClientEvent('Node7Core:Command:TeleportToPlayer', source, coords)
             else
-                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+                Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
             end
         else
             local location = Node7Shared.Locations[args[1]]
             if location then
                 TriggerClientEvent('Node7Core:Command:TeleportToCoords', source, location.x, location.y, location.z, location.w)
             else
-                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.location_not_exist'), type = 'error', duration = 5000 })
+                Node7Core.Functions.Notify(source, {title = Lang:t('error.location_not_exist'), type = 'error', duration = 5000 })
             end
         end
     else
@@ -107,10 +107,10 @@ Node7Core.Commands.Add('tp', Lang:t('command.tp.help'), { { name = Lang:t('comma
             if x ~= 0 and y ~= 0 and z ~= 0 then
                 TriggerClientEvent('Node7Core:Command:TeleportToCoords', source, x, y, z)
             else
-                TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.wrong_format'), type = 'error', duration = 5000 })
+                Node7Core.Functions.Notify(source, {title = Lang:t('error.wrong_format'), type = 'error', duration = 5000 })
             end
         else
-            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.missing_args'), type = 'error', duration = 5000 })
+            Node7Core.Functions.Notify(source, {title = Lang:t('error.missing_args'), type = 'error', duration = 5000 })
         end
     end
 end, 'admin')
@@ -137,7 +137,7 @@ Node7Core.Commands.Add('addpermission', Lang:t('command.addpermission.help'), { 
     if Player then
         Node7Core.Functions.AddPermission(Player.PlayerData.source, permission)
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'god')
 
@@ -147,7 +147,7 @@ Node7Core.Commands.Add('removepermission', Lang:t('command.removepermission.help
     if Player then
         Node7Core.Functions.RemovePermission(Player.PlayerData.source, permission)
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'god')
 
@@ -155,12 +155,12 @@ end, 'god')
 
 Node7Core.Commands.Add('openserver', Lang:t('command.openserver.help'), {}, false, function(source)
     if not Node7Core.Config.Server.Closed then
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.server_already_open'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.server_already_open'), type = 'error', duration = 5000 })
         return
     end
     if Node7Core.Functions.HasPermission(source, 'admin') then
         Node7Core.Config.Server.Closed = false
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.server_opened'), type = 'success', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('success.server_opened'), type = 'success', duration = 5000 })
     else
         Node7Core.Functions.Kick(source, Lang:t('error.no_permission'), nil, nil)
     end
@@ -168,7 +168,7 @@ end, 'admin')
 
 Node7Core.Commands.Add('closeserver', Lang:t('command.closeserver.help'), { { name = Lang:t('command.closeserver.params.reason.name'), help = Lang:t('command.closeserver.params.reason.help') } }, false, function(source, args)
     if Node7Core.Config.Server.Closed then
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.server_already_closed'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.server_already_closed'), type = 'error', duration = 5000 })
         return
     end
     if Node7Core.Functions.HasPermission(source, 'admin') then
@@ -180,7 +180,7 @@ Node7Core.Commands.Add('closeserver', Lang:t('command.closeserver.help'), { { na
                 Node7Core.Functions.Kick(k, reason, nil, nil)
             end
         end
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.server_closed'), type = 'success', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('success.server_closed'), type = 'success', duration = 5000 })
     else
         Node7Core.Functions.Kick(source, Lang:t('error.no_permission'), nil, nil)
     end
@@ -226,18 +226,28 @@ end, 'admin')
 Node7Core.Commands.Add('givemoney', Lang:t('command.givemoney.help'), { { name = Lang:t('command.givemoney.params.id.name'), help = Lang:t('command.givemoney.params.id.help') }, { name = Lang:t('command.givemoney.params.moneytype.name'), help = Lang:t('command.givemoney.params.moneytype.help') }, { name = Lang:t('command.givemoney.params.amount.name'), help = Lang:t('command.givemoney.params.amount.help') } }, true, function(source, args)
     local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
     if Player then
-        Player.Functions.AddMoney(tostring(args[2]), tonumber(args[3]), 'Admin give money')
+        local success, result = Player.Functions.AddMoney(tostring(args[2]), tonumber(args[3]), 'Admin give money')
+        if success then
+            Node7Core.Functions.Notify(source, { title = 'Money Updated', description = ('$%.2f added to %s. New balance: $%.2f'):format(tonumber(args[3]) or 0, tostring(args[2]), tonumber(result) or 0), type = 'success', duration = 5000 })
+        else
+            Node7Core.Functions.Notify(source, { title = 'Money Update Failed', description = tostring(result or 'Unable to add money.'), type = 'error', duration = 5000 })
+        end
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'admin')
 
 Node7Core.Commands.Add('setmoney', Lang:t('command.setmoney.help'), { { name = Lang:t('command.setmoney.params.id.name'), help = Lang:t('command.setmoney.params.id.help') }, { name = Lang:t('command.setmoney.params.moneytype.name'), help = Lang:t('command.setmoney.params.moneytype.help') }, { name = Lang:t('command.setmoney.params.amount.name'), help = Lang:t('command.setmoney.params.amount.help') } }, true, function(source, args)
     local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
     if Player then
-        Player.Functions.SetMoney(tostring(args[2]), tonumber(args[3]))
+        local success, result = Player.Functions.SetMoney(tostring(args[2]), tonumber(args[3]), 'Admin set money')
+        if success then
+            Node7Core.Functions.Notify(source, { title = 'Money Updated', description = ('%s set to $%.2f.'):format(tostring(args[2]), tonumber(result) or 0), type = 'success', duration = 5000 })
+        else
+            Node7Core.Functions.Notify(source, { title = 'Money Update Failed', description = tostring(result or 'Unable to set money.'), type = 'error', duration = 5000 })
+        end
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'admin')
 
@@ -245,7 +255,7 @@ end, 'admin')
 
 Node7Core.Commands.Add('job', Lang:t('command.job.help'), {}, false, function(source)
     local PlayerJob = Node7Core.Functions.GetPlayer(source).PlayerData.job
-    TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('info.job_info', { value = PlayerJob.label, value2 = PlayerJob.grade.name, value3 = PlayerJob.onduty }), type = 'info', duration = 5000 })
+    Node7Core.Functions.Notify(source, {title = Lang:t('info.job_info', { value = PlayerJob.label, value2 = PlayerJob.grade.name, value3 = PlayerJob.onduty }), type = 'info', duration = 5000 })
 end, 'user')
 
 Node7Core.Commands.Add('setjob', Lang:t('command.setjob.help'), { { name = Lang:t('command.setjob.params.id.name'), help = Lang:t('command.setjob.params.id.help') }, { name = Lang:t('command.setjob.params.job.name'), help = Lang:t('command.setjob.params.job.help') }, { name = Lang:t('command.setjob.params.grade.name'), help = Lang:t('command.setjob.params.grade.help') } }, true, function(source, args)
@@ -254,16 +264,16 @@ Node7Core.Commands.Add('setjob', Lang:t('command.setjob.help'), { { name = Lang:
         local job = tostring(args[2])
         local grade = tonumber(args[3])
         if not Node7Core.Shared.Jobs[job] then
-            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.job_not_exist'), type = 'error', duration = 5000 })
+            Node7Core.Functions.Notify(source, {title = Lang:t('error.job_not_exist'), type = 'error', duration = 5000 })
             return
         end
         if GetResourceState('node7-multijob') == 'started' then
             exports['node7-multijob']:AddJobToPlayer(Player.PlayerData.citizenid, job, grade)
         end
         Player.Functions.SetJob(job, grade)
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.job_set'), type = 'success', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('success.job_set'), type = 'success', duration = 5000 })
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'admin')
 
@@ -271,19 +281,19 @@ end, 'admin')
 
 Node7Core.Commands.Add('gang', Lang:t('command.gang.help'), {}, false, function(source)
     local PlayerGang = Node7Core.Functions.GetPlayer(source).PlayerData.gang
-    TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('info.gang_info', { value = PlayerGang.label, value2 = PlayerGang.grade.name }), type = 'info', duration = 5000 })
+    Node7Core.Functions.Notify(source, {title = Lang:t('info.gang_info', { value = PlayerGang.label, value2 = PlayerGang.grade.name }), type = 'info', duration = 5000 })
 end, 'user')
 
 Node7Core.Commands.Add('setgang', Lang:t('command.setgang.help'), { { name = Lang:t('command.setgang.params.id.name'), help = Lang:t('command.setgang.params.id.help') }, { name = Lang:t('command.setgang.params.gang.name'), help = Lang:t('command.setgang.params.gang.help') }, { name = Lang:t('command.setgang.params.grade.name'), help = Lang:t('command.setgang.params.grade.help') } }, true, function(source, args)
     local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
     if Player then
         if Player.Functions.SetGang(tostring(args[2]), tonumber(args[3])) then
-            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('success.gang_set'), type = 'success', duration = 5000 })
+            Node7Core.Functions.Notify(source, {title = Lang:t('success.gang_set'), type = 'success', duration = 5000 })
         else
-            TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.gang_not_exist'), type = 'error', duration = 5000 })
+            Node7Core.Functions.Notify(source, {title = Lang:t('error.gang_not_exist'), type = 'error', duration = 5000 })
         end
     else
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
     end
 end, 'admin')
 
@@ -323,7 +333,7 @@ end, 'user')
 
 Node7Core.Commands.Add('me', Lang:t('command.me.help'), { { name = Lang:t('command.me.params.message.name'), help = Lang:t('command.me.params.message.help') } }, false, function(source, args)
     if #args < 1 then
-        TriggerClientEvent('ox_lib:notify', source, {title = Lang:t('error.missing_args2'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(source, {title = Lang:t('error.missing_args2'), type = 'error', duration = 5000 })
         return
     end
     local ped = GetPlayerPed(source)
@@ -344,12 +354,12 @@ end, 'user')
 Node7Core.Commands.Add('id', 'Check Your ID #', {}, false, function(source)
     local src = source
     local Player = Node7Core.Functions.GetPlayer(src)
-    TriggerClientEvent('ox_lib:notify', source, {title = 'ID: '..source, type = 'info', duration = 5000 })
+    Node7Core.Functions.Notify(source, {title = 'ID: '..source, type = 'info', duration = 5000 })
 end, 'user')
 
 Node7Core.Commands.Add('cid', 'Check Your Citizen ID #', {}, false, function(source)
     local src = source
     local Player = Node7Core.Functions.GetPlayer(src)
     local Playercid = Player.PlayerData.citizenid
-    TriggerClientEvent('ox_lib:notify', source, {title = 'Citizen ID: '..Playercid, type = 'info', duration = 5000 })
+    Node7Core.Functions.Notify(source, {title = 'Citizen ID: '..Playercid, type = 'info', duration = 5000 })
 end, 'user')

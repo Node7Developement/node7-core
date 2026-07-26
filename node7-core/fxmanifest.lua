@@ -4,9 +4,18 @@ game 'rdr3'
 
 lua54 'yes'
 
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js',
+    'html/images/*.png'
+}
+
 author 'NODE7 Development Studios'
 description 'node7-core'
-version '2.3.10-node7.2'
+version '2.4.0-node7.4'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -15,6 +24,7 @@ shared_scripts {
     'locale/en.lua',
     'locale/*.lua',
     'shared/main.lua',
+    'shared/functions.lua',
     'shared/items.lua',
     'shared/jobs.lua',
     'shared/vehicles.lua',
@@ -25,8 +35,10 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/dataview.lua',
     'client/main.lua',
     'client/functions.lua',
+    'client/notifications.lua',
     'client/loops.lua',
     'client/events.lua',
     'client/drawtext.lua',

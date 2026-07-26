@@ -1,166 +1,38 @@
-Node7Shared = Node7Shared or {}
+Node7Core = Node7Core or {}
+Node7Core.Config = Node7Core.Config or Node7Config or {}
+Node7Core.Shared = Node7Core.Shared or Node7Shared or {}
+Node7Core.ClientCallbacks = Node7Core.ClientCallbacks or {}
+Node7Core.ServerCallbacks = Node7Core.ServerCallbacks or {}
+Node7Core.PlayerData = Node7Core.PlayerData or {}
 
-local StringCharset = {}
-local NumberCharset = {}
+-- Preserve the historical Node7Shared global while making Node7Core.Shared
+-- the canonical QBCore-style shared table.
+Node7Shared = Node7Core.Shared
 
-Node7Shared.StarterItems = {
-    bread = { amount = 5, item = 'bread' },
-    water = { amount = 5, item = 'water' },
-}
+---Return the full core object or a filtered subset, matching QBCore usage.
+---@param filters string[]?
+---@return table
+local function GetCoreObject(filters)
+    if not filters then return Node7Core end
 
-for i = 48, 57 do NumberCharset[#NumberCharset + 1] = string.char(i) end
-for i = 65, 90 do StringCharset[#StringCharset + 1] = string.char(i) end
-for i = 97, 122 do StringCharset[#StringCharset + 1] = string.char(i) end
-
-function Node7Shared.RandomStr(length)
-    if length <= 0 then return '' end
-    return Node7Shared.RandomStr(length - 1) .. StringCharset[math.random(1, #StringCharset)]
-end
-
-function Node7Shared.RandomInt(length)
-    if length <= 0 then return '' end
-    return Node7Shared.RandomInt(length - 1) .. NumberCharset[math.random(1, #NumberCharset)]
-end
-
-function Node7Shared.SplitStr(str, delimiter)
-    local result = {}
-    local from = 1
-    local delim_from, delim_to = string.find(str, delimiter, from)
-    while delim_from do
-        result[#result + 1] = string.sub(str, from, delim_from - 1)
-        from = delim_to + 1
-        delim_from, delim_to = string.find(str, delimiter, from)
-    end
-    result[#result + 1] = string.sub(str, from)
-    return result
-end
-
-function Node7Shared.Trim(value)
-    if not value then return nil end
-    return (string.gsub(value, '^%s*(.-)%s*$', '%1'))
-end
-
-function Node7Shared.FirstToUpper(value)
-    if not value then return nil end
-    return (value:gsub("^%l", string.upper))
-end
-
-function Node7Shared.Round(value, numDecimalPlaces)
-    if not numDecimalPlaces then return math.floor(value + 0.5) end
-    local power = 10 ^ numDecimalPlaces
-    return math.floor((value * power) + 0.5) / (power)
-end
-
-function Node7Shared.ChangeVehicleExtra(vehicle, extra, enable)
-    if DoesExtraExist(vehicle, extra) then
-        if enable then
-            SetVehicleExtra(vehicle, extra, false)
-            if not IsVehicleExtraTurnedOn(vehicle, extra) then
-                Node7Shared.ChangeVehicleExtra(vehicle, extra, enable)
-            end
-        else
-            SetVehicleExtra(vehicle, extra, true)
-            if IsVehicleExtraTurnedOn(vehicle, extra) then
-                Node7Shared.ChangeVehicleExtra(vehicle, extra, enable)
-            end
+    local results = {}
+    for i = 1, #filters do
+        local key = filters[i]
+        if Node7Core[key] ~= nil then
+            results[key] = Node7Core[key]
         end
     end
+    return results
 end
+exports('GetCoreObject', GetCoreObject)
 
-function Node7Shared.SetDefaultVehicleExtras(vehicle, config)
-    -- Clear Extras
-    for i = 1, 20 do
-        if DoesExtraExist(vehicle, i) then
-            SetVehicleExtra(vehicle, i, 1)
-        end
-    end
-
-    for id, enabled in pairs(config) do
-        Node7Shared.ChangeVehicleExtra(vehicle, tonumber(id), type(enabled) == 'boolean' and enabled or true)
-    end
+---Return a shared namespace or one entry from it.
+---@param namespace string
+---@param item string?
+---@return any
+local function GetShared(namespace, item)
+    local sharedNamespace = Node7Core.Shared[namespace]
+    if sharedNamespace == nil then return nil end
+    return item and sharedNamespace[item] or sharedNamespace
 end
-
-Node7Shared.MaleNoGloves = {
-    [0] = true,
-    [1] = true,
-    [2] = true,
-    [3] = true,
-    [4] = true,
-    [5] = true,
-    [6] = true,
-    [7] = true,
-    [8] = true,
-    [9] = true,
-    [10] = true,
-    [11] = true,
-    [12] = true,
-    [13] = true,
-    [14] = true,
-    [15] = true,
-    [18] = true,
-    [26] = true,
-    [52] = true,
-    [53] = true,
-    [54] = true,
-    [55] = true,
-    [56] = true,
-    [57] = true,
-    [58] = true,
-    [59] = true,
-    [60] = true,
-    [61] = true,
-    [62] = true,
-    [112] = true,
-    [113] = true,
-    [114] = true,
-    [118] = true,
-    [125] = true,
-    [132] = true
-}
-
-Node7Shared.FemaleNoGloves = {
-    [0] = true,
-    [1] = true,
-    [2] = true,
-    [3] = true,
-    [4] = true,
-    [5] = true,
-    [6] = true,
-    [7] = true,
-    [8] = true,
-    [9] = true,
-    [10] = true,
-    [11] = true,
-    [12] = true,
-    [13] = true,
-    [14] = true,
-    [15] = true,
-    [19] = true,
-    [59] = true,
-    [60] = true,
-    [61] = true,
-    [62] = true,
-    [63] = true,
-    [64] = true,
-    [65] = true,
-    [66] = true,
-    [67] = true,
-    [68] = true,
-    [69] = true,
-    [70] = true,
-    [71] = true,
-    [129] = true,
-    [130] = true,
-    [131] = true,
-    [135] = true,
-    [142] = true,
-    [149] = true,
-    [153] = true,
-    [157] = true,
-    [161] = true,
-    [165] = true
-}
-
-exports('GetWeapons', function()
-    return Node7Shared.Weapons
-end)
+exports('GetShared', GetShared)

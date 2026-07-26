@@ -1,4 +1,6 @@
-Node7Config = {}
+Node7Core = Node7Core or {}
+Node7Core.Config = Node7Core.Config or {}
+Node7Config = Node7Core.Config
 
 Node7Config.MaxPlayers = GetConvarInt('sv_maxclients', 48) -- Gets max players from config file, default 48
 Node7Config.DefaultSpawn = vector4(-325.29, 766.24, 117.48, 90.0)
@@ -6,12 +8,67 @@ Node7Config.UpdateInterval = 5                             -- how often to save 
 Node7Config.HidePlayerNames = true
 
 Node7Config.Money = {}
-Node7Config.Money.MoneyTypes = { cash = 50, bank = 0, valbank = 0, rhobank = 0, blkbank = 0, armbank = 0, bloodmoney = 0 } -- type = startamount - Add or remove money types for your server (for ex. blackmoney = 0), remember once added it will not be removed from the database!
-Node7Config.Money.DontAllowMinus = { 'cash', 'bloodmoney' }            -- Money that is not allowed going in minus
-Node7Config.Money.MinusLimit = -5000                                   -- The maximum amount you can be negative 
+Node7Config.Money.MoneyTypes = { cash = 50, bank = 0, bloodmoney = 0 } -- Persistent character money accounts. Cash can be represented by inventory items.
+Node7Config.Money.AccountAliases = { valbank = 'bank', rhobank = 'bank', blkbank = 'bank', armbank = 'bank' } -- Legacy branch names resolve to the shared personal bank account.
+Node7Config.Money.MigrateLegacyBranchBalances = true                   -- Keeps the highest bank/legacy branch value, then removes legacy branch keys.
+Node7Config.Money.DontAllowMinus = { 'cash', 'bank', 'bloodmoney' }    -- Accounts that may never fall below zero.
+Node7Config.Money.MinusLimit = -5000                                   -- Negative limit for custom accounts not listed above.
+Node7Config.Money.MaxTransactionAmount = 100000000                     -- Maximum value accepted by one core money operation.
 Node7Config.Money.PayCheckTimeOut = 10                                 -- The time in minutes that it will give the paycheck
 Node7Config.Money.PayCheckSociety = false                              -- If true paycheck will come from the society account that the player is employed at, requires node7-management
-Node7Config.Money.EnableMoneyItems = true                              -- If true cash and bloodmoney will be represented wih inventory items
+Node7Config.Money.EnableMoneyItems = true                              -- If true, cash and bloodmoney use inventory items as the source of truth.
+
+
+Node7Config.Notify = {
+    DefaultTitle = 'NODE7',
+    DefaultDuration = 5000,
+    MinDuration = 1000,
+    MaxDuration = 30000,
+    EnableSound = true,
+    DevelopmentMode = false,
+    EnableTestCommand = true,
+    TestCommand = 'node7notifytest',
+    DefaultImage = 'images/default-portrait.png',
+    DefaultSoundDict = 'Transaction_Feed_Sounds',
+    DefaultSoundName = 'Transaction_Positive',
+    AlertTitle = 'ALERT!!',
+    AlertDuration = 7000,
+    AlertImage = 'images/default-portrait.png',
+    AlertSoundDict = 'Transaction_Feed_Sounds',
+    AlertSoundName = 'Transaction_Negative',
+    Types = {
+        info = {
+            title = 'NOTICE',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Positive',
+        },
+        success = {
+            title = 'SUCCESS',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Positive',
+        },
+        error = {
+            title = 'ERROR',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Negative',
+        },
+        warning = {
+            title = 'WARNING',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Negative',
+        },
+        money = {
+            title = 'BANKING',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Positive',
+        },
+        alert = {
+            title = 'ALERT!!',
+            image = 'images/default-portrait.png',
+            soundName = 'Transaction_Negative',
+        },
+    },
+}
 
 Node7Config.Player = {}
 Node7Config.Player.Bloodtypes = {

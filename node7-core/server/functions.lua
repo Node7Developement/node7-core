@@ -3,6 +3,61 @@ Node7Core.Player_Buckets = {}
 Node7Core.Entity_Buckets = {}
 Node7Core.UsableItems = {}
 
+
+---Send the NODE7 western left-side notification UI without using ox_lib notifications.
+---@param source number
+---@param text string|table
+---@param texttype? string
+---@param length? number
+---@param title? string
+function Node7Core.Functions.Notify(source, text, texttype, length, title)
+    source = tonumber(source) or source
+    if source == 0 then
+        local message = type(text) == 'table' and (text.description or text.title) or text
+        print(('[node7-core] %s'):format(tostring(message or 'Notification')))
+        return true
+    end
+    TriggerClientEvent('Node7Core:Notify', source, text, texttype, length, title)
+    return true
+end
+
+exports('Notify', Node7Core.Functions.Notify)
+
+---Send an explicit NODE7 western left-side notification card.
+---@param source number
+---@param title string
+---@param description string
+---@param iconDict? string
+---@param icon? string
+---@param duration? number
+---@param color? string
+---@param soundDict? string
+---@param soundName? string
+function Node7Core.Functions.NotifyLeft(source, title, description, iconDict, icon, duration, color, soundDict, soundName)
+    source = tonumber(source) or source
+    if not source or source == 0 then return false end
+    TriggerClientEvent('Node7Core:NotifyLeft', source, title, description, iconDict, icon, duration, color, soundDict, soundName)
+    return true
+end
+
+exports('NotifyLeft', Node7Core.Functions.NotifyLeft)
+
+---Send the screenshot-style NODE7 western alert card.
+---@param source number
+---@param description string
+---@param duration? number
+---@param title? string
+---@param iconDict? string
+---@param icon? string
+function Node7Core.Functions.NotifyAlert(source, description, duration, title, iconDict, icon)
+    source = tonumber(source) or source
+    if not source or source == 0 then return false end
+    TriggerClientEvent('Node7Core:NotifyAlert', source, description, duration, title, iconDict, icon)
+    return true
+end
+
+exports('NotifyAlert', Node7Core.Functions.NotifyAlert)
+
 -- Getters
 -- Get your player first and then trigger a function on them
 -- ex: local player = Node7Core.Functions.GetPlayer(source)
@@ -44,23 +99,16 @@ end
 ---@param source any
 ---@return table
 function Node7Core.Functions.GetPlayer(source)
-    if type(source) == 'number' then
-        return Node7Core.Players[source]
-    else
-        return Node7Core.Players[Node7Core.Functions.GetSource(source)]
-    end
+    local numericSource = tonumber(source)
+    if numericSource then return Node7Core.Players[numericSource] end
+    return Node7Core.Players[Node7Core.Functions.GetSource(source)]
 end
 
 ---Get player by citizen id
 ---@param citizenid string
 ---@return table?
 function Node7Core.Functions.GetPlayerByCitizenId(citizenid)
-    for src in pairs(Node7Core.Players) do
-        if Node7Core.Players[src].PlayerData.citizenid == citizenid then
-            return Node7Core.Players[src]
-        end
-    end
-    return nil
+    return Node7Core.PlayersByCitizenId[citizenid]
 end
 
 ---Get offline player by citizen id
@@ -373,19 +421,19 @@ function PaycheckInterval()
                         local account = exports['node7-banking']:GetAccountBalance(Player.PlayerData.job.name)
                         if account ~= 0 then          -- Checks if player is employed by a society
                             if account < payment then -- Checks if company has enough money to pay society
-                                TriggerClientEvent('ox_lib:notify', Player.PlayerData.source, {title = Lang:t('error.company_too_poor'), type = 'error', duration = 5000 })
+                                Node7Core.Functions.Notify(Player.PlayerData.source, {title = Lang:t('error.company_too_poor'), type = 'error', duration = 5000 })
                             else
                                 Player.Functions.AddMoney('bank', payment, 'paycheck')
                                 exports['node7-banking']:RemoveMoney(Player.PlayerData.job.name, payment, 'Employee Paycheck')
-                                TriggerClientEvent('ox_lib:notify', Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
+                                Node7Core.Functions.Notify(Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
                             end
                         else
                             Player.Functions.AddMoney('bank', payment, 'paycheck')
-                            TriggerClientEvent('ox_lib:notify', Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
+                            Node7Core.Functions.Notify(Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
                         end
                     else
                         Player.Functions.AddMoney('bank', payment, 'paycheck')
-                        TriggerClientEvent('ox_lib:notify', Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
+                        Node7Core.Functions.Notify(Player.PlayerData.source, {title = Lang:t('info.received_paycheck', { value = payment }), type = 'info', duration = 5000 })
                     end
                 end
             end
@@ -396,31 +444,55 @@ end
 
 -- Callback Functions --
 
----Trigger Client Callback
+---Trigger a registered client callback. Supports callback and await styles.
 ---@param name string
----@param source any
----@param cb function
+---@param source number
 ---@param ... any
-function Node7Core.Functions.TriggerClientCallback(name, source, cb, ...)
-    Node7Core.ClientCallbacks[name] = cb
-    TriggerClientEvent('Node7Core:Client:TriggerClientCallback', source, name, ...)
+function Node7Core.Functions.TriggerClientCallback(name, source, ...)
+    source = tonumber(source)
+    if not source then return nil end
+
+    local cb = nil
+    local args = { ... }
+    if Node7Core.Shared.IsFunction(args[1]) then
+        cb = args[1]
+        table.remove(args, 1)
+    end
+
+    local callbackKey = name .. ':' .. source
+    local request = {
+        callback = cb,
+        promise = promise.new()
+    }
+    Node7Core.ClientCallbacks[callbackKey] = request
+
+    TriggerClientEvent('Node7Core:Client:TriggerClientCallback', source, name, table.unpack(args))
+
+    if cb == nil then
+        Citizen.Await(request.promise)
+        local value = request.promise.value
+        Node7Core.ClientCallbacks[callbackKey] = nil
+        return value
+    end
 end
 
----Create Server Callback
+---Create a server callback.
 ---@param name string
 ---@param cb function
 function Node7Core.Functions.CreateCallback(name, cb)
     Node7Core.ServerCallbacks[name] = cb
 end
 
----Trigger Serv er Callback
+---Execute a server callback directly.
 ---@param name string
----@param source any
+---@param source number
 ---@param cb function
 ---@param ... any
 function Node7Core.Functions.TriggerCallback(name, source, cb, ...)
-    if not Node7Core.ServerCallbacks[name] then return end
-    Node7Core.ServerCallbacks[name](source, cb, ...)
+    local handler = Node7Core.ServerCallbacks[name]
+    if not handler then return false end
+    handler(source, cb, ...)
+    return true
 end
 
 -- Items

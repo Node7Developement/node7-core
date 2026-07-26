@@ -54,7 +54,7 @@ RegisterNetEvent('Node7Core:Command:GoToMarker', function()
     local groundZ = GetHeightmapBottomZForPosition(coords.x, coords.y)
     local vehicle = GetVehiclePedIsIn(cache.ped, false)
     if not IsWaypointActive() then
-        lib.notify({ title = Lang:t("error.no_waypoint"), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify({ title = Lang:t("error.no_waypoint"), type = 'error', duration = 5000 })
         return
     end
 
@@ -73,7 +73,7 @@ RegisterNetEvent('Node7Core:Command:GoToMarker', function()
         Citizen.InvokeNative(0x028F76B6E78246EB, cache.ped, vehicle, -1)
     end
 
-    lib.notify({ title = Lang:t("success.teleported_waypoint"), type = 'success', duration = 5000 })
+    Node7Core.Functions.Notify({ title = Lang:t("success.teleported_waypoint"), type = 'success', duration = 5000 })
 end)
 
 -- Noclip Command
@@ -134,25 +134,29 @@ end)
 
 -- This event is exploitable and should not be used. It has been deprecated, and will be removed soon.
 RegisterNetEvent('Node7Core:Client:UseItem', function(item)
-    Node7Core.Debug(string.format('%s triggered Node7Core:Client:UseItem by ID %s with the following data. This event is deprecated due to exploitation, and will be removed soon. Check qb-inventory for the right use on this event.', GetInvokingResource(), GetPlayerServerId(PlayerId())))
+    Node7Core.Debug(string.format('%s triggered Node7Core:Client:UseItem by ID %s with the following data. This event is deprecated due to exploitation, and will be removed soon. Check node7-inventory for the correct item-use path.', GetInvokingResource(), GetPlayerServerId(PlayerId())))
     Node7Core.Debug(item)
 end)
 
 -- Callback Events --
 
--- Client Callback
+-- Client Callback request
 RegisterNetEvent('Node7Core:Client:TriggerClientCallback', function(name, ...)
-    Node7Core.Functions.TriggerClientCallback(name, function(...)
+    local handler = Node7Core.ClientCallbacks[name]
+    if not handler then return end
+    handler(function(...)
         TriggerServerEvent('Node7Core:Server:TriggerClientCallback', name, ...)
     end, ...)
 end)
 
--- Server Callback
+-- Server Callback response
 RegisterNetEvent('Node7Core:Client:TriggerCallback', function(name, ...)
-    if Node7Core.ServerCallbacks[name] then
-        Node7Core.ServerCallbacks[name](...)
-        Node7Core.ServerCallbacks[name] = nil
-    end
+    local request = Node7Core.ServerCallbacks[name]
+    if not request then return end
+
+    request.promise:resolve(...)
+    if request.callback then request.callback(...) end
+    Node7Core.ServerCallbacks[name] = nil
 end)
 
 -- Me command

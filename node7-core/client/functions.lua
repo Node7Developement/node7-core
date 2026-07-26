@@ -1,4 +1,4 @@
-Node7Core.Functions = {}
+Node7Core.Functions = Node7Core.Functions or {}
 
 -- Callbacks
 
@@ -6,14 +6,27 @@ function Node7Core.Functions.CreateClientCallback(name, cb)
     Node7Core.ClientCallbacks[name] = cb
 end
 
-function Node7Core.Functions.TriggerClientCallback(name, cb, ...)
-    if not Node7Core.ClientCallbacks[name] then return end
-    Node7Core.ClientCallbacks[name](cb, ...)
-end
+function Node7Core.Functions.TriggerCallback(name, ...)
+    local cb = nil
+    local args = { ... }
 
-function Node7Core.Functions.TriggerCallback(name, cb, ...)
-    Node7Core.ServerCallbacks[name] = cb
-    TriggerServerEvent('Node7Core:Server:TriggerCallback', name, ...)
+    if Node7Core.Shared.IsFunction(args[1]) then
+        cb = args[1]
+        table.remove(args, 1)
+    end
+
+    local request = {
+        callback = cb,
+        promise = promise.new()
+    }
+    Node7Core.ServerCallbacks[name] = request
+
+    TriggerServerEvent('Node7Core:Server:TriggerCallback', name, table.unpack(args))
+
+    if cb == nil then
+        Citizen.Await(request.promise)
+        return request.promise.value
+    end
 end
 
 function Node7Core.Debug(resource, obj, depth)

@@ -1,5 +1,6 @@
-Node7Core.Players = {}
-Node7Core.Player = {}
+Node7Core.Players = Node7Core.Players or {}
+Node7Core.PlayersByCitizenId = Node7Core.PlayersByCitizenId or {}
+Node7Core.Player = Node7Core.Player or {}
 
 -- On player login get their data or set defaults
 -- Don't touch any of this unless you know what you are doing
@@ -171,6 +172,51 @@ local function normalizeGangData(gang)
     }
 end
 
+
+local function normalizeMoneyType(moneytype)
+    if type(moneytype) ~= 'string' then return nil end
+    local normalized = moneytype:lower()
+    normalized = (Node7Core.Config.Money.AccountAliases or {})[normalized] or normalized
+    if Node7Core.Config.Money.MoneyTypes[normalized] == nil then return nil end
+    return normalized
+end
+
+local function normalizeMoneyAmount(amount, allowZero)
+    local number = tonumber(amount)
+    if not number or number ~= number or number == math.huge or number == -math.huge then return nil end
+    number = tonumber(string.format('%.2f', number))
+    if number < 0 or (not allowZero and number == 0) then return nil end
+    if number > (tonumber(Node7Core.Config.Money.MaxTransactionAmount) or 100000000) then return nil end
+    return number
+end
+
+local function isProtectedMoneyType(moneytype)
+    for _, protectedType in pairs(Node7Core.Config.Money.DontAllowMinus or {}) do
+        if protectedType == moneytype then return true end
+    end
+    return false
+end
+
+local function normalizeStoredMoney(playerData)
+    playerData.money = type(playerData.money) == 'table' and playerData.money or {}
+
+    if Node7Core.Config.Money.MigrateLegacyBranchBalances then
+        local legacyBank = 0
+        for alias, target in pairs(Node7Core.Config.Money.AccountAliases or {}) do
+            if target == 'bank' then
+                legacyBank = math.max(legacyBank, tonumber(playerData.money[alias]) or 0)
+                playerData.money[alias] = nil
+            end
+        end
+        playerData.money.bank = math.max(tonumber(playerData.money.bank) or 0, legacyBank)
+    end
+
+    for moneytype, defaultAmount in pairs(Node7Core.Config.Money.MoneyTypes) do
+        local amount = tonumber(playerData.money[moneytype])
+        playerData.money[moneytype] = tonumber(string.format('%.2f', amount or defaultAmount or 0))
+    end
+end
+
 function Node7Core.Player.CheckPlayerData(source, PlayerData)
     PlayerData = PlayerData or {}
     PlayerData.cid = tonumber(PlayerData.cid or PlayerData.slot or 1) or 1
@@ -196,6 +242,7 @@ function Node7Core.Player.CheckPlayerData(source, PlayerData)
     end
 
     applyDefaults(PlayerData, Node7Core.Config.Player.PlayerDefaults)
+    normalizeStoredMoney(PlayerData)
 
     if GetResourceState('node7-inventory') == 'started' then
         local ok, items = pcall(function()
@@ -210,10 +257,15 @@ end
 -- On player logout
 
 function Node7Core.Player.Logout(source)
+    source = tonumber(source)
+    local player = source and Node7Core.Players[source] or nil
     TriggerClientEvent('Node7Core:Client:OnPlayerUnload', source)
     TriggerEvent('Node7Core:Server:OnPlayerUnload', source)
     TriggerClientEvent('Node7Core:Player:UpdatePlayerData', source)
     Wait(200)
+    if player and player.PlayerData and player.PlayerData.citizenid then
+        Node7Core.PlayersByCitizenId[player.PlayerData.citizenid] = nil
+    end
     Node7Core.Players[source] = nil
 end
 
@@ -227,15 +279,43 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
     self.PlayerData = PlayerData
     self.Offline = Offline
 
-    function self.Functions.UpdatePlayerData()
+    function self.Functions.GetPlayerData()
+        return self.PlayerData
+    end
+
+    function self.Functions.GetName()
+        local charinfo = self.PlayerData.charinfo or {}
+        return (tostring(charinfo.firstname or '') .. ' ' .. tostring(charinfo.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
+    end
+
+    function self.Functions.UpdatePlayerData(key, val)
         if self.Offline then return end
 
-        if Node7Core.Config.Money.EnableMoneyItems then
+        if Node7Core.Config.Money.EnableMoneyItems and type(SynchronizeMoneyItems) == 'function' then
             self.PlayerData = SynchronizeMoneyItems(self.PlayerData)
         end
 
         TriggerEvent('Node7Core:Player:SetPlayerData', self.PlayerData)
         TriggerClientEvent('Node7Core:Player:SetPlayerData', self.PlayerData.source, self.PlayerData)
+        TriggerEvent('Node7Core:Server:OnPlayerUpdated', self.PlayerData.source, key or 'all', val or self.PlayerData)
+        TriggerClientEvent('Node7Core:Client:OnPlayerUpdated', self.PlayerData.source, key or 'all', val or self.PlayerData)
+    end
+
+    self.Functions.UpdateClient = self.Functions.UpdatePlayerData
+
+    function self.Functions.Notify(text, texttype, length, title)
+        if self.Offline then return false, 'player_offline' end
+        return Node7Core.Functions.Notify(self.PlayerData.source, text, texttype, length, title)
+    end
+
+    function self.Functions.NotifyLeft(title, description, iconDict, icon, duration, color, soundDict, soundName)
+        if self.Offline then return false, 'player_offline' end
+        return Node7Core.Functions.NotifyLeft(self.PlayerData.source, title, description, iconDict, icon, duration, color, soundDict, soundName)
+    end
+
+    function self.Functions.NotifyAlert(description, duration, title, iconDict, icon)
+        if self.Offline then return false, 'player_offline' end
+        return Node7Core.Functions.NotifyAlert(self.PlayerData.source, description, duration, title, iconDict, icon)
     end
 
     function self.Functions.SetJob(job, grade)
@@ -374,90 +454,117 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
     end
 
     function self.Functions.AddMoney(moneytype, amount, reason)
+        local account = normalizeMoneyType(moneytype)
+        local value = normalizeMoneyAmount(amount, false)
         reason = reason or 'unknown'
-        moneytype = moneytype:lower()
-        amount = tonumber(amount)
-        if amount < 0 then return end
-        if not self.PlayerData.money[moneytype] then return false end
-        self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] + amount
+        if not account then return false, 'invalid_money_type' end
+        if not value then return false, 'invalid_amount' end
+
+        local newBalance
+        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
+            local success, result = Node7Core.MoneyItems.Add(self, account, value, reason)
+            if not success then return false, result end
+            newBalance = result
+            self.PlayerData.money[account] = newBalance
+        else
+            local current = tonumber(self.PlayerData.money[account]) or 0
+            newBalance = tonumber(string.format('%.2f', current + value))
+            self.PlayerData.money[account] = newBalance
+        end
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
-            if amount > 100000 then
-                TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason, true)
-            else
-                TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-            end
-
-            if not Node7Core.Config.Money.EnableMoneyItems then
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
-            end
-            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
-            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
+            TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', ('**%s (citizenid: %s | id: %s)** $%.2f (%s) added, new balance: $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, value, account, newBalance, reason), value > 100000)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, value, false)
+            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, account, value, 'add', reason)
+            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, account, value, 'add', reason)
         end
 
-        return true
+        return true, newBalance
     end
 
     function self.Functions.RemoveMoney(moneytype, amount, reason)
+        local account = normalizeMoneyType(moneytype)
+        local value = normalizeMoneyAmount(amount, false)
         reason = reason or 'unknown'
-        moneytype = moneytype:lower()
-        amount = tonumber(amount)
-        if amount < 0 then return end
-        if not self.PlayerData.money[moneytype] then return false end
-        for _, mtype in pairs(Node7Core.Config.Money.DontAllowMinus) do
-            if mtype == moneytype then
-                if (self.PlayerData.money[moneytype] - amount) < 0 then
-                    return false
-                end
-            end
+        if not account then return false, 'invalid_money_type' end
+        if not value then return false, 'invalid_amount' end
+
+        local current = self.Functions.GetMoney(account)
+        if current == false or current == nil then return false, 'invalid_money_type' end
+        if isProtectedMoneyType(account) and (current - value) < 0 then return false, 'insufficient_funds' end
+        if (current - value) < (tonumber(Node7Core.Config.Money.MinusLimit) or -5000) then return false, 'minus_limit' end
+
+        local newBalance
+        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
+            local success, result = Node7Core.MoneyItems.Remove(self, account, value, reason)
+            if not success then return false, result end
+            newBalance = result
+            self.PlayerData.money[account] = newBalance
+        else
+            newBalance = tonumber(string.format('%.2f', current - value))
+            self.PlayerData.money[account] = newBalance
         end
-        if self.PlayerData.money[moneytype] - amount < Node7Core.Config.Money.MinusLimit then return false end
-        self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] - amount
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
-            if amount > 100000 then
-                TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') removed, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason, true)
-            else
-                TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') removed, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-            end
-            if not Node7Core.Config.Money.EnableMoneyItems then
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
-            end
-            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
-            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
+            TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', ('**%s (citizenid: %s | id: %s)** $%.2f (%s) removed, new balance: $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, value, account, newBalance, reason), value > 100000)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, value, true)
+            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, account, value, 'remove', reason)
+            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, account, value, 'remove', reason)
         end
 
-        return true
+        return true, newBalance
     end
 
     function self.Functions.SetMoney(moneytype, amount, reason)
+        local account = normalizeMoneyType(moneytype)
+        local value = normalizeMoneyAmount(amount, true)
         reason = reason or 'unknown'
-        moneytype = moneytype:lower()
-        amount = tonumber(amount)
-        if amount < 0 then return false end
-        if not self.PlayerData.money[moneytype] then return false end
-        local difference = amount - self.PlayerData.money[moneytype]
-        self.PlayerData.money[moneytype] = amount
+        if not account then return false, 'invalid_money_type' end
+        if value == nil then return false, 'invalid_amount' end
+
+        local previous = self.Functions.GetMoney(account)
+        if previous == false or previous == nil then return false, 'invalid_money_type' end
+        local difference = value - previous
+        local newBalance
+
+        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
+            local success, result = Node7Core.MoneyItems.Set(self, account, value, reason)
+            if not success then return false, result end
+            newBalance = result
+            self.PlayerData.money[account] = newBalance
+        else
+            newBalance = value
+            self.PlayerData.money[account] = newBalance
+        end
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
-            TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'SetMoney', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') set, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-            if not Node7Core.Config.Money.EnableMoneyItems then
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
+            TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'SetMoney', 'green', ('**%s (citizenid: %s | id: %s)** %s set to $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, account, newBalance, reason))
+            if difference ~= 0 then
+                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, math.abs(difference), difference < 0)
             end
-            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
-            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
+            TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, account, newBalance, 'set', reason)
+            TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, account, newBalance, 'set', reason)
         end
 
-        return true
+        return true, newBalance
     end
 
     function self.Functions.GetMoney(moneytype)
-        if not moneytype then return false end
-        moneytype = moneytype:lower()
-        return self.PlayerData.money[moneytype]
+        local account = normalizeMoneyType(moneytype)
+        if not account then return false end
+
+        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
+            local balance = Node7Core.MoneyItems.GetBalance(self, account)
+            if balance ~= nil then
+                self.PlayerData.money[account] = balance
+                return balance
+            end
+        end
+
+        return tonumber(self.PlayerData.money[account]) or 0
     end
 
     function self.Functions.Save()
@@ -515,8 +622,12 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
     else
         self.Functions.InitializeStateBags()
         Node7Core.Players[self.PlayerData.source] = self
+        Node7Core.PlayersByCitizenId[self.PlayerData.citizenid] = self
         Node7Core.Player.Save(self.PlayerData.source)
         TriggerEvent('Node7Core:Server:PlayerLoaded', self)
+        if Node7Core.Config.Money.EnableMoneyItems and Node7Core.MoneyItems then
+            Node7Core.MoneyItems.InitializePlayer(self)
+        end
         self.Functions.UpdatePlayerData()
         return self
     end
@@ -676,7 +787,10 @@ function Node7Core.Player.ForceDeleteCharacter(citizenid)
         local Player = Node7Core.Functions.GetPlayerByCitizenId(citizenid)
 
         if Player then
-            DropPlayer(Player.PlayerData.source, 'An admin deleted the character which you are currently using')
+            local playerSource = Player.PlayerData.source
+            Node7Core.Players[playerSource] = nil
+            Node7Core.PlayersByCitizenId[citizenid] = nil
+            DropPlayer(playerSource, 'An admin deleted the character which you are currently using')
         end
         for i = 1, tableCount do
             local v = playertables[i]
@@ -757,5 +871,66 @@ function Node7Core.Player.CreateSerialNumber()
     if result == 0 then return SerialNumber end
     return Node7Core.Player.CreateSerialNumber()
 end
+
+
+-- QBCore-style player export bridge. Exports return the same public PlayerData
+-- and Functions layout used by exports['node7-core']:GetCoreObject().
+local function isCallable(value)
+    if type(value) == 'function' then return true end
+    if type(value) == 'table' and type(rawget(value, '__cfx_functionReference')) == 'string' then return true end
+    local mt = getmetatable(value)
+    return mt and type(mt.__call) == 'function' or false
+end
+
+local function buildPlayerInterface(player)
+    if not player then return nil end
+    local interface = {
+        PlayerData = player.PlayerData,
+        Functions = {}
+    }
+
+    for methodName, handler in pairs(player.Functions or {}) do
+        if isCallable(handler) then
+            interface.Functions[methodName] = handler
+            interface[methodName] = handler
+        end
+    end
+
+    for fieldName, data in pairs(player) do
+        if fieldName ~= 'PlayerData' and fieldName ~= 'Functions' and not isCallable(data) then
+            interface[fieldName] = data
+        end
+    end
+
+    return interface
+end
+
+exports('GetPlayer', function(source)
+    return buildPlayerInterface(Node7Core.Functions.GetPlayer(source))
+end)
+
+exports('GetPlayerByCitizenId', function(citizenid)
+    return buildPlayerInterface(Node7Core.Functions.GetPlayerByCitizenId(citizenid))
+end)
+
+exports('GetOfflinePlayerByCitizenId', function(citizenid)
+    return buildPlayerInterface(Node7Core.Player.GetOfflinePlayer(citizenid))
+end)
+
+exports('GetPlayerByLicense', function(license)
+    return buildPlayerInterface(Node7Core.Player.GetPlayerByLicense(license))
+end)
+
+exports('GetOfflinePlayerByLicense', function(license)
+    return buildPlayerInterface(Node7Core.Player.GetOfflinePlayerByLicense(license))
+end)
+
+exports('AddPlayerMethod', function(ids, methodName, handler)
+    Node7Core.Functions.AddPlayerMethod(ids, methodName, handler)
+end)
+
+exports('AddPlayerField', function(ids, fieldName, data)
+    Node7Core.Functions.AddPlayerField(ids, fieldName, data)
+end)
 
 PaycheckInterval() -- This starts the paycheck system

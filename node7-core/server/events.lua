@@ -128,18 +128,24 @@ end)
 
 -- Callback Events --
 
--- Client Callback
+-- Client Callback response
 RegisterNetEvent('Node7Core:Server:TriggerClientCallback', function(name, ...)
-    if Node7Core.ClientCallbacks[name] then
-        Node7Core.ClientCallbacks[name](...)
-        Node7Core.ClientCallbacks[name] = nil
-    end
+    local callbackKey = name .. ':' .. source
+    local request = Node7Core.ClientCallbacks[callbackKey]
+    if not request then return end
+
+    request.promise:resolve(...)
+    if request.callback then request.callback(...) end
+    Node7Core.ClientCallbacks[callbackKey] = nil
 end)
 
--- Server Callback
+-- Server Callback request
 RegisterNetEvent('Node7Core:Server:TriggerCallback', function(name, ...)
+    local handler = Node7Core.ServerCallbacks[name]
+    if not handler then return end
+
     local src = source
-    Node7Core.Functions.TriggerCallback(name, src, function(...)
+    handler(src, function(...)
         TriggerClientEvent('Node7Core:Client:TriggerCallback', src, name, ...)
     end, ...)
 end)
@@ -167,10 +173,10 @@ RegisterNetEvent('Node7Core:ToggleDuty', function()
     if not Player then return end
     if Player.PlayerData.job.onduty then
         Player.Functions.SetJobDuty(false)
-        TriggerClientEvent('ox_lib:notify', src, {title = Lang:t('info.off_duty'), type = 'info', duration = 5000 })
+        Node7Core.Functions.Notify(src, {title = Lang:t('info.off_duty'), type = 'info', duration = 5000 })
     else
         Player.Functions.SetJobDuty(true)
-        TriggerClientEvent('ox_lib:notify', src, {title = Lang:t('info.on_duty'), type = 'info', duration = 5000 })
+        Node7Core.Functions.Notify(src, {title = Lang:t('info.on_duty'), type = 'info', duration = 5000 })
     end
 
     TriggerEvent('Node7Core:Server:SetDuty', src, Player.PlayerData.job.onduty)
@@ -207,12 +213,12 @@ RegisterNetEvent('Node7Core:CallCommand', function(command, args)
     local hasPerm = Node7Core.Functions.HasPermission(src, 'command.' .. Node7Core.Commands.List[command].name)
     if hasPerm then
         if Node7Core.Commands.List[command].argsrequired and #Node7Core.Commands.List[command].arguments ~= 0 and not args[#Node7Core.Commands.List[command].arguments] then
-            TriggerClientEvent('ox_lib:notify', src, {title = Lang:t('error.missing_args2'), type = 'error', duration = 5000 })
+            Node7Core.Functions.Notify(src, {title = Lang:t('error.missing_args2'), type = 'error', duration = 5000 })
         else
             Node7Core.Commands.List[command].callback(src, args)
         end
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = Lang:t('error.no_access'), type = 'error', duration = 5000 })
+        Node7Core.Functions.Notify(src, {title = Lang:t('error.no_access'), type = 'error', duration = 5000 })
     end
 end)
 
