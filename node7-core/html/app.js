@@ -20,6 +20,8 @@
         document.body.style.background = 'transparent';
         document.documentElement.classList.toggle('ui-paused', uiPaused);
         document.body.classList.toggle('ui-paused', uiPaused);
+        document.documentElement.style.display = uiPaused ? 'none' : '';
+        document.body.style.display = uiPaused ? 'none' : '';
         document.body.classList.toggle('nui-active', !uiPaused && (active.size > 0 || statusVisible));
         document.body.style.visibility = uiPaused ? 'hidden' : 'visible';
         document.body.style.opacity = uiPaused ? '0' : '';

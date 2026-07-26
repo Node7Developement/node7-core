@@ -1,3 +1,15 @@
+# 2.6.2-node7.9
+
+- Fixed RedM native map/pause detection by checking both `IsPauseMenuActive()` and `GetPauseMenuState()`.
+- Hides the core NUI immediately when ESC/O requests the native frontend.
+- Force-hides the complete HTML root while paused so the account HUD cannot render above the map.
+- No inventory, banking, money, or CSRF behavior was changed.
+
+# 2.6.1-node7.8
+
+- Fixed concurrent NUI CSRF token validation.
+- Stale UI tokens are rejected without disconnecting legitimate players.
+
 ## 2.5.1-node7.6
 
 - Added centralized native pause-menu detection for all NODE7 core-owned UI.

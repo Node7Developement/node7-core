@@ -231,6 +231,8 @@ Node7Core.Functions.CreateCallback('Node7Core:Server:SpawnVehicle', function(sou
     cb(NetworkGetNetworkIdFromEntity(veh))
 end)
 
+-- Backward-compatible legacy event. Invalid or stale NUI tokens are rejected
+-- client-side; they are not grounds for disconnecting a player.
 RegisterNetEvent('Node7Core:Server:KickCSRF', function()
-    DropPlayer(source, 'CSRF validation failed')
+    print(('[node7-core] Ignored legacy CSRF kick request from player %s.'):format(source))
 end)

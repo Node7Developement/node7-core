@@ -15,7 +15,7 @@ files {
 
 author 'NODE7 Development Studios'
 description 'node7-core'
-version '2.6.0-node7.7'
+version '2.6.2-node7.9'
 
 shared_scripts {
     '@ox_lib/init.lua',

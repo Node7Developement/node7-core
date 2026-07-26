@@ -234,30 +234,80 @@ if Node7Config.HidePlayerNames then
     end)
 end
 
--- csrf protection
+-- CSRF protection
+--
+-- Multiple NODE7 UIs can send messages in the same frame. The previous
+-- implementation stored only one token, so a newer message invalidated an older
+-- in-flight message and incorrectly kicked the player. Keep a small expiring pool
+-- of valid one-time message tokens instead.
 
-local csrfToken = nil
+local csrfTokens = {}
+local CSRF_TOKEN_TTL = 15000
+local CSRF_TOKEN_LIMIT = 64
 
-local function GenerateCSRFToken() 
-    local timeout = 500
-    while csrfToken and timeout > 0 do
-        timeout = timeout - 1
-        Wait(0)
+local function CleanupCSRFTokens(now)
+    now = now or GetGameTimer()
+
+    local count = 0
+    local oldestToken, oldestExpiry
+
+    for token, expiresAt in pairs(csrfTokens) do
+        if expiresAt <= now then
+            csrfTokens[token] = nil
+        else
+            count = count + 1
+            if not oldestExpiry or expiresAt < oldestExpiry then
+                oldestToken = token
+                oldestExpiry = expiresAt
+            end
+        end
     end
-    
-    local token = tostring(math.random(100000, 999999)) .. GetGameTimer()
-    csrfToken = token
 
+    while count >= CSRF_TOKEN_LIMIT and oldestToken do
+        csrfTokens[oldestToken] = nil
+        count = count - 1
+
+        oldestToken, oldestExpiry = nil, nil
+        for token, expiresAt in pairs(csrfTokens) do
+            if not oldestExpiry or expiresAt < oldestExpiry then
+                oldestToken = token
+                oldestExpiry = expiresAt
+            end
+        end
+    end
+end
+
+local function GenerateCSRFToken()
+    local now = GetGameTimer()
+    CleanupCSRFTokens(now)
+
+    local token = ('%s:%s:%s'):format(
+        tostring(GetPlayerServerId(PlayerId())),
+        tostring(now),
+        tostring(math.random(100000, 999999))
+    )
+
+    csrfTokens[token] = now + CSRF_TOKEN_TTL
     return token
 end
 exports('GenerateCSRFToken', GenerateCSRFToken)
 
 RegisterNUICallback('validateCSRF', function(data, cb)
-    if csrfToken and csrfToken == data.clientToken then
-        csrfToken = nil
+    local token = type(data) == 'table' and tostring(data.clientToken or '') or ''
+    local now = GetGameTimer()
+    local expiresAt = csrfTokens[token]
+
+    if expiresAt and expiresAt > now then
+        csrfTokens[token] = nil
         cb({ valid = true })
-    else
-        TriggerServerEvent('Node7Core:Server:KickCSRF')
-        cb({ valid = false })
+        return
     end
+
+    if token ~= '' then
+        csrfTokens[token] = nil
+    end
+
+    -- Reject stale or unknown messages without disconnecting legitimate players.
+    -- A timing race or an NUI refresh is not proof of an attack.
+    cb({ valid = false })
 end)

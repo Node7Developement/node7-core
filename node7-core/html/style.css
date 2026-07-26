@@ -41,6 +41,7 @@ html.ui-paused,
 html.ui-paused body,
 body.ui-paused,
 body.ui-paused.nui-active {
+    display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;

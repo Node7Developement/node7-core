@@ -39,11 +39,11 @@ Node7Config.Money.PhysicalCash = {
 Node7Config.UI = {
     HideDuringPauseMenu = true, -- Hides every NODE7 core-owned UI surface in RedM's native pause menu.
     PauseMenuPollMs = 0, -- Poll every frame so native pause-menu transitions cannot leak the HUD.
-    PauseMenuHeartbeatMs = 250,
+    PauseMenuHeartbeatMs = 100,
 }
 
 Node7Config.StatusHUD = {
-    Enabled = true,
+    Enabled = false,
     DefaultVisible = true,
     ToggleCommand = 'togglemoneyhud',
     ShowCharacterName = true,
