@@ -27,7 +27,20 @@ Node7Config.Money.MaxTransactionAmount = 100000000
 Node7Config.Money.SaveImmediately = true
 Node7Config.Money.PayCheckTimeOut = 10
 Node7Config.Money.PayCheckSociety = false
-Node7Config.Money.EnableMoneyItems = false                             -- Currency is owned by node7-core, never by the inventory UI/items.
+
+Node7Config.Money.PhysicalCash = {
+    Enabled = true,
+    Resource = 'node7-cashitem',
+    Item = 'cash',
+    WholeAmountsOnly = true,
+}
+
+
+Node7Config.UI = {
+    HideDuringPauseMenu = true, -- Hides every NODE7 core-owned UI surface in RedM's native pause menu.
+    PauseMenuPollMs = 0, -- Poll every frame so native pause-menu transitions cannot leak the HUD.
+    PauseMenuHeartbeatMs = 250,
+}
 
 Node7Config.StatusHUD = {
     Enabled = true,

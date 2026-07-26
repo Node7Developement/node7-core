@@ -37,6 +37,15 @@ body.nui-active {
     opacity: 1;
 }
 
+html.ui-paused,
+html.ui-paused body,
+body.ui-paused,
+body.ui-paused.nui-active {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 body::before,
 body::after {
     display: none !important;

@@ -161,6 +161,8 @@ end)
 
 -- Me command
 local function Draw3DText(coords, str)
+    if Node7Core.UI and Node7Core.UI.ShouldHideCoreUI and Node7Core.UI.ShouldHideCoreUI() then return end
+
     local onScreen, worldX, worldY = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z)
     local camCoords = GetGameplayCamCoord()
     local scale = 200 / (GetGameplayCamFov() * #(camCoords - coords))
@@ -191,10 +193,14 @@ RegisterNetEvent('Node7Core:Command:ShowMe3D', function(senderId, msg)
     CreateThread(function()
         local displayTime = 10000 + GetGameTimer()
         while displayTime > GetGameTimer() do
-            local targetPed = GetPlayerPed(sender)
+            if Node7Core.UI and Node7Core.UI.ShouldHideCoreUI and Node7Core.UI.ShouldHideCoreUI() then
+                Wait(100)
+            else
+                local targetPed = GetPlayerPed(sender)
             local tCoords = GetEntityCoords(targetPed)
-            Draw3DText(tCoords, msg)
-            Wait(0)
+                Draw3DText(tCoords, msg)
+                Wait(0)
+            end
         end
     end)
 end)

@@ -12,12 +12,21 @@
     const statusBloodWrap = document.getElementById('status-blood-wrap');
     const statusBloodType = document.getElementById('status-bloodtype');
     let statusVisible = false;
+    let uiPaused = false;
     let nextId = 1;
 
     const syncNuiVisibility = () => {
         document.documentElement.style.background = 'transparent';
         document.body.style.background = 'transparent';
-        document.body.classList.toggle('nui-active', active.size > 0 || statusVisible);
+        document.documentElement.classList.toggle('ui-paused', uiPaused);
+        document.body.classList.toggle('ui-paused', uiPaused);
+        document.body.classList.toggle('nui-active', !uiPaused && (active.size > 0 || statusVisible));
+        document.body.style.visibility = uiPaused ? 'hidden' : 'visible';
+        document.body.style.opacity = uiPaused ? '0' : '';
+        document.body.style.pointerEvents = uiPaused ? 'none' : '';
+        container.style.display = uiPaused ? 'none' : '';
+        statusHud.style.display = uiPaused ? 'none' : '';
+        document.body.setAttribute('aria-hidden', uiPaused ? 'true' : 'false');
     };
 
     const safeText = (value, fallback = '') => {
@@ -176,6 +185,10 @@
                 break;
             case 'status:hide':
                 hideStatus();
+                break;
+            case 'ui:pause':
+                uiPaused = data.paused === true;
+                syncNuiVisibility();
                 break;
             default:
                 break;

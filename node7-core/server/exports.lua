@@ -343,3 +343,49 @@ end)
 exports('SetBloodType', function(source, bloodType)
     return Node7Core.Functions.SetBloodType(source, bloodType)
 end)
+
+
+-- Canonical NODE7 money exports.
+-- Return values: success, balance-or-error, complete money table.
+local function getMoneyPlayer(source)
+    return Node7Core.Functions.GetPlayer(tonumber(source))
+end
+
+exports('GetPlayerMoney', function(source, account)
+    local Player = getMoneyPlayer(source)
+    if not Player then return 0, 'not_loaded' end
+    return Player.Functions.GetMoney(account or 'cash') or 0
+end)
+
+exports('AddPlayerMoney', function(source, account, amount, reason)
+    local Player = getMoneyPlayer(source)
+    if not Player then return false, 'not_loaded' end
+    local success, result = Player.Functions.AddMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
+end)
+
+exports('RemovePlayerMoney', function(source, account, amount, reason)
+    local Player = getMoneyPlayer(source)
+    if not Player then return false, 'not_loaded' end
+    local success, result = Player.Functions.RemoveMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
+end)
+
+exports('SetPlayerMoney', function(source, account, amount, reason)
+    local Player = getMoneyPlayer(source)
+    if not Player then return false, 'not_loaded' end
+    local success, result = Player.Functions.SetMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
+end)
+
+-- Internal cash-item synchronization endpoint. Only node7-cashitem may call it.
+exports('SyncCashItemBalance', function(source, amount, reason)
+    local invokingResource = GetInvokingResource()
+    if invokingResource and invokingResource ~= 'node7-cashitem' then
+        return false, 'not_authorized'
+    end
+
+    local Player = getMoneyPlayer(source)
+    if not Player then return false, 'not_loaded' end
+    return Player.Functions.SyncCashItemBalance(amount, reason)
+end)

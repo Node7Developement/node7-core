@@ -98,19 +98,22 @@ end)
 exports('AddMoney', function(source, account, amount, reason)
     local Player = Node7Core.Functions.GetPlayer(source)
     if not Player then return false, 'not_loaded' end
-    return Player.Functions.AddMoney(account or 'cash', amount or 0, reason), Player.PlayerData.money
+    local success, result = Player.Functions.AddMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
 end)
 
 exports('RemoveMoney', function(source, account, amount, reason)
     local Player = Node7Core.Functions.GetPlayer(source)
     if not Player then return false, 'not_loaded' end
-    return Player.Functions.RemoveMoney(account or 'cash', amount or 0, reason), Player.PlayerData.money
+    local success, result = Player.Functions.RemoveMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
 end)
 
 exports('SetMoney', function(source, account, amount, reason)
     local Player = Node7Core.Functions.GetPlayer(source)
     if not Player then return false, 'not_loaded' end
-    return Player.Functions.SetMoney(account or 'cash', amount or 0, reason), Player.PlayerData.money
+    local success, result = Player.Functions.SetMoney(account or 'cash', amount or 0, reason)
+    return success, result, Player.PlayerData.money
 end)
 
 exports('GiveItem', function(source, item, amount, metadata, slot)

@@ -190,6 +190,16 @@ local function normalizeMoneyAmount(amount, allowZero)
     return number
 end
 
+
+local function normalizeAccountAmount(account, amount, allowZero)
+    if account == 'cash' and Node7Core.PhysicalCash and Node7Core.PhysicalCash.IsEnabled() then
+        return Node7Core.PhysicalCash.NormalizeAmount(amount, allowZero)
+    end
+    local value = normalizeMoneyAmount(amount, allowZero)
+    if value == nil then return nil, 'invalid_amount' end
+    return value
+end
+
 local function isProtectedMoneyType(moneytype)
     for _, protectedType in pairs(Node7Core.Config.Money.DontAllowMinus or {}) do
         if protectedType == moneytype then return true end
@@ -291,9 +301,6 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
     function self.Functions.UpdatePlayerData(key, val)
         if self.Offline then return end
 
-        if Node7Core.Config.Money.EnableMoneyItems and type(SynchronizeMoneyItems) == 'function' then
-            self.PlayerData = SynchronizeMoneyItems(self.PlayerData)
-        end
 
         TriggerEvent('Node7Core:Player:SetPlayerData', self.PlayerData)
         TriggerClientEvent('Node7Core:Player:SetPlayerData', self.PlayerData.source, self.PlayerData)
@@ -486,14 +493,14 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.AddMoney(moneytype, amount, reason)
         local account = normalizeMoneyType(moneytype)
-        local value = normalizeMoneyAmount(amount, false)
         reason = reason or 'unknown'
         if not account then return false, 'invalid_money_type' end
-        if not value then return false, 'invalid_amount' end
+        local value, amountError = normalizeAccountAmount(account, amount, false)
+        if not value then return false, amountError or 'invalid_amount' end
 
         local newBalance
-        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
-            local success, result = Node7Core.MoneyItems.Add(self, account, value, reason)
+        if not self.Offline and Node7Core.PhysicalCash and Node7Core.PhysicalCash.IsCashAccount(account) then
+            local success, result = Node7Core.PhysicalCash.Add(self.PlayerData.source, value, reason)
             if not success then return false, result end
             newBalance = result
             self.PlayerData.money[account] = newBalance
@@ -517,10 +524,10 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.RemoveMoney(moneytype, amount, reason)
         local account = normalizeMoneyType(moneytype)
-        local value = normalizeMoneyAmount(amount, false)
         reason = reason or 'unknown'
         if not account then return false, 'invalid_money_type' end
-        if not value then return false, 'invalid_amount' end
+        local value, amountError = normalizeAccountAmount(account, amount, false)
+        if not value then return false, amountError or 'invalid_amount' end
 
         local current = self.Functions.GetMoney(account)
         if current == false or current == nil then return false, 'invalid_money_type' end
@@ -528,8 +535,8 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
         if (current - value) < (tonumber(Node7Core.Config.Money.MinusLimit) or -5000) then return false, 'minus_limit' end
 
         local newBalance
-        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
-            local success, result = Node7Core.MoneyItems.Remove(self, account, value, reason)
+        if not self.Offline and Node7Core.PhysicalCash and Node7Core.PhysicalCash.IsCashAccount(account) then
+            local success, result = Node7Core.PhysicalCash.Remove(self.PlayerData.source, value, reason)
             if not success then return false, result end
             newBalance = result
             self.PlayerData.money[account] = newBalance
@@ -552,18 +559,18 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.SetMoney(moneytype, amount, reason)
         local account = normalizeMoneyType(moneytype)
-        local value = normalizeMoneyAmount(amount, true)
         reason = reason or 'unknown'
         if not account then return false, 'invalid_money_type' end
-        if value == nil then return false, 'invalid_amount' end
+        local value, amountError = normalizeAccountAmount(account, amount, true)
+        if value == nil then return false, amountError or 'invalid_amount' end
 
         local previous = self.Functions.GetMoney(account)
         if previous == false or previous == nil then return false, 'invalid_money_type' end
         local difference = value - previous
         local newBalance
 
-        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
-            local success, result = Node7Core.MoneyItems.Set(self, account, value, reason)
+        if not self.Offline and Node7Core.PhysicalCash and Node7Core.PhysicalCash.IsCashAccount(account) then
+            local success, result = Node7Core.PhysicalCash.Set(self.PlayerData.source, value, reason)
             if not success then return false, result end
             newBalance = result
             self.PlayerData.money[account] = newBalance
@@ -590,9 +597,9 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
         local account = normalizeMoneyType(moneytype)
         if not account then return false end
 
-        if not self.Offline and Node7Core.MoneyItems and Node7Core.MoneyItems.IsItemType(account) then
-            local balance = Node7Core.MoneyItems.GetBalance(self, account)
-            if balance ~= nil then
+        if not self.Offline and Node7Core.PhysicalCash and Node7Core.PhysicalCash.IsCashAccount(account) and Node7Core.PhysicalCash.IsReady() then
+            local success, balance = Node7Core.PhysicalCash.Get(self.PlayerData.source)
+            if success then
                 self.PlayerData.money[account] = balance
                 return balance
             end
@@ -600,6 +607,28 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
         return tonumber(self.PlayerData.money[account]) or 0
     end
+
+
+function self.Functions.SyncCashItemBalance(amount, reason)
+    local value, amountError = normalizeAccountAmount('cash', amount, true)
+    if value == nil then return false, amountError or 'invalid_amount' end
+
+    local previous = tonumber(self.PlayerData.money.cash) or 0
+    if previous == value then return true, value end
+
+    self.PlayerData.money.cash = value
+    if not self.Offline then
+        self.Functions.UpdatePlayerData('money.cash', value)
+        if Node7Core.Config.Money.SaveImmediately then Node7Core.Player.Save(self.PlayerData.source) end
+
+        local difference = value - previous
+        TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, 'cash', math.abs(difference), difference < 0)
+        TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, 'cash', value, 'sync', reason or 'cash-item-sync')
+        TriggerEvent('Node7Core:Server:OnMoneyChange', self.PlayerData.source, 'cash', value, 'sync', reason or 'cash-item-sync')
+    end
+
+    return true, value
+end
 
     function self.Functions.Save()
         if self.Offline then
@@ -659,9 +688,6 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
         Node7Core.PlayersByCitizenId[self.PlayerData.citizenid] = self
         Node7Core.Player.Save(self.PlayerData.source)
         TriggerEvent('Node7Core:Server:PlayerLoaded', self)
-        if Node7Core.Config.Money.EnableMoneyItems and Node7Core.MoneyItems then
-            Node7Core.MoneyItems.InitializePlayer(self)
-        end
         self.Functions.UpdatePlayerData()
         return self
     end

@@ -124,6 +124,33 @@ Notification defaults, type titles, images, durations, and sounds are configured
 
 Run `/node7notifytest` in game to display the reference-style `ALERT!!` card with sound.
 
+
+## Native pause-menu UI handling
+
+Every UI surface owned by `node7-core` is hidden while the native RedM pause menu is open and restored when gameplay resumes:
+
+- Cash, bank, gold, character name, and blood-type status HUD.
+- Western notification cards.
+- NODE7 ox_lib text UI exports and events.
+- NODE7 native prompt and prompt-group exports.
+- NODE7 2D/3D text helpers and `/me` world text.
+
+Configuration is available under `Node7Config.UI`:
+
+```lua
+Node7Config.UI = {
+    HideDuringPauseMenu = true,
+    PauseMenuPollMs = 100,
+    PauseMenuOpenPollMs = 50,
+}
+```
+
+Other NODE7 resources can check the shared state with:
+
+```lua
+local isOpen = exports['node7-core']:IsPauseMenuOpen()
+```
+
 ## Administration
 
 - `/givemoney [id] [cash|bank|gold|bloodmoney] [amount] [reason]`
@@ -134,3 +161,26 @@ Run `/node7notifytest` in game to display the reference-style `ALERT!!` card wit
 - `/togglemoneyhud`
 
 Use `recipe/permissions.cfg` for the exact ACE rules.
+
+
+## Physical cash integration
+
+`cash` is the only physical currency item. Start resources in this order:
+
+```cfg
+ensure node7-core
+ensure node7-inventory
+ensure node7-cashitem
+ensure node7-banking
+```
+
+Core money calls remain authoritative:
+
+```lua
+local ok, balance = exports['node7-core']:AddPlayerMoney(source, 'cash', 25, 'reward')
+local ok, balance = exports['node7-core']:RemovePlayerMoney(source, 'cash', 10, 'purchase')
+local ok, balance = exports['node7-core']:SetPlayerMoney(source, 'cash', 100, 'admin-set')
+local balance = exports['node7-core']:GetPlayerMoney(source, 'cash')
+```
+
+Cash is synchronized through `node7-cashitem` and remains a normal movable inventory stack.

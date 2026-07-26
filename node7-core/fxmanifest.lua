@@ -15,7 +15,7 @@ files {
 
 author 'NODE7 Development Studios'
 description 'node7-core'
-version '2.5.0-node7.5'
+version '2.6.0-node7.7'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -37,6 +37,7 @@ shared_scripts {
 client_scripts {
     'client/dataview.lua',
     'client/main.lua',
+    'client/ui_visibility.lua',
     'client/functions.lua',
     'client/notifications.lua',
     'client/loops.lua',
@@ -51,6 +52,7 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'server/functions.lua',
+    'server/physicalcash.lua',
     'server/database.lua',
     'server/player.lua',
     'server/events.lua',

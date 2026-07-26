@@ -1,3 +1,11 @@
+## 2.5.1-node7.6
+
+- Added centralized native pause-menu detection for all NODE7 core-owned UI.
+- Hides the cash/bank/gold HUD and western notifications while the pause menu is open.
+- Temporarily hides ox_lib text UI and restores it cleanly when gameplay resumes.
+- Disables individual prompts, prompt groups, exported 2D/3D text, and `/me` text during pause.
+- Added configurable pause detection intervals and a client `IsPauseMenuOpen` export.
+
 ## 2.5.0-node7.5
 
 - Moved cash, bank, gold, and blood-money ownership fully into node7-core persistence.
@@ -71,3 +79,11 @@
 - Added database bootstrap for players/bans.
 - Added NODE7 compatibility exports.
 - Removed hard reliance on horses.
+
+
+## 2.6.0-node7.7
+
+- Replaced legacy `dollar` and `cent` items with one physical `cash` item.
+- Added the `node7-cashitem` bridge for SetMoney/AddMoney/RemoveMoney/GetMoney.
+- Added canonical player-money exports and secure inventory-to-core synchronization.
+- Hardened native pause-menu UI hiding with per-frame detection and direct NUI suppression.

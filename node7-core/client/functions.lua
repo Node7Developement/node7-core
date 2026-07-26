@@ -497,7 +497,14 @@ end
 
 -- Unused
 
+local function coreUIHiddenByPauseMenu()
+    return Node7Core.UI
+        and Node7Core.UI.ShouldHideCoreUI
+        and Node7Core.UI.ShouldHideCoreUI()
+end
+
 function Node7Core.Functions.DrawText(x, y, width, height, scale, r, g, b, a, text)
+    if coreUIHiddenByPauseMenu() then return end
     -- Use local function instead
     SetTextFont(4)
     SetTextScale(scale, scale)
@@ -508,6 +515,7 @@ function Node7Core.Functions.DrawText(x, y, width, height, scale, r, g, b, a, te
 end
 
 function Node7Core.Functions.DrawText3D(x, y, z, text)
+    if coreUIHiddenByPauseMenu() then return end
     -- Use local function instead
     SetTextScale(0.35, 0.35)
     SetTextFont(4)
