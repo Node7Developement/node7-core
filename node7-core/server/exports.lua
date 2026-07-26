@@ -334,3 +334,12 @@ local function ExploitBan(playerId, origin)
 end
 
 exports('ExploitBan', ExploitBan)
+
+-- NODE7 medical metadata helpers
+exports('GetBloodType', function(source)
+    return Node7Core.Functions.GetBloodType(source)
+end)
+
+exports('SetBloodType', function(source, bloodType)
+    return Node7Core.Functions.SetBloodType(source, bloodType)
+end)

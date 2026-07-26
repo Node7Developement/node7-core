@@ -13,13 +13,13 @@ Import `recipe/node7-core.sql` or leave the resource to auto-create/update the r
 Optional ACE lines are in `recipe/permissions.cfg`.
 
 
-## Money and notifications
+## Money, medical metadata, and status display
 
-- `cash` uses the `dollar` and `cent` items supplied by NODE7 inventory.
-- `bank` is the shared persistent personal bank account.
-- Start order remains `ox_lib`, `oxmysql`, `node7-core`, then `node7-inventory`.
-- NODE7 core notifications use native RedM left-side feed cards with icons and sound; ox_lib remains available for other systems.
-
+- `cash`, `bank`, `gold`, and legacy `bloodmoney` are persisted by `node7-core`.
+- Currency is not stored as inventory items and no inventory UI modification is included.
+- Character metadata includes persistent `bloodtype` and `blood` level values.
+- The core NUI renders a compact top-left cash, bank, gold, and blood-type display.
+- Start order: `ox_lib`, `oxmysql`, `node7-core`, then `node7-inventory`.
 
 ## QBCore-style API layout
 

@@ -1,5 +1,6 @@
 ensure ox_lib
 ensure oxmysql
 ensure node7-core
+ensure node7-inventory
 
-exec resources/[node7]/node7-core/recipe/permissions.cfg
+exec resources/[node7-development]/node7-core/recipe/permissions.cfg

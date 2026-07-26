@@ -8,15 +8,34 @@ Node7Config.UpdateInterval = 5                             -- how often to save 
 Node7Config.HidePlayerNames = true
 
 Node7Config.Money = {}
-Node7Config.Money.MoneyTypes = { cash = 50, bank = 0, bloodmoney = 0 } -- Persistent character money accounts. Cash can be represented by inventory items.
-Node7Config.Money.AccountAliases = { valbank = 'bank', rhobank = 'bank', blkbank = 'bank', armbank = 'bank' } -- Legacy branch names resolve to the shared personal bank account.
+Node7Config.Money.MoneyTypes = { cash = 50.00, bank = 0.00, gold = 0.00, bloodmoney = 0.00 } -- Core-owned persistent character accounts.
+Node7Config.Money.AccountAliases = {
+    money = 'cash',
+    wallet = 'cash',
+    valbank = 'bank',
+    rhobank = 'bank',
+    blkbank = 'bank',
+    armbank = 'bank',
+    goldbar = 'gold',
+    goldbars = 'gold',
+}
+Node7Config.Money.VisibleAccounts = { 'cash', 'bank', 'gold' }         -- Accounts rendered by the NODE7 core status display.
 Node7Config.Money.MigrateLegacyBranchBalances = true                   -- Keeps the highest bank/legacy branch value, then removes legacy branch keys.
-Node7Config.Money.DontAllowMinus = { 'cash', 'bank', 'bloodmoney' }    -- Accounts that may never fall below zero.
-Node7Config.Money.MinusLimit = -5000                                   -- Negative limit for custom accounts not listed above.
-Node7Config.Money.MaxTransactionAmount = 100000000                     -- Maximum value accepted by one core money operation.
-Node7Config.Money.PayCheckTimeOut = 10                                 -- The time in minutes that it will give the paycheck
-Node7Config.Money.PayCheckSociety = false                              -- If true paycheck will come from the society account that the player is employed at, requires node7-management
-Node7Config.Money.EnableMoneyItems = true                              -- If true, cash and bloodmoney use inventory items as the source of truth.
+Node7Config.Money.DontAllowMinus = { 'cash', 'bank', 'gold', 'bloodmoney' }
+Node7Config.Money.MinusLimit = -5000
+Node7Config.Money.MaxTransactionAmount = 100000000
+Node7Config.Money.SaveImmediately = true
+Node7Config.Money.PayCheckTimeOut = 10
+Node7Config.Money.PayCheckSociety = false
+Node7Config.Money.EnableMoneyItems = false                             -- Currency is owned by node7-core, never by the inventory UI/items.
+
+Node7Config.StatusHUD = {
+    Enabled = true,
+    DefaultVisible = true,
+    ToggleCommand = 'togglemoneyhud',
+    ShowCharacterName = true,
+    ShowBloodType = true,
+}
 
 
 Node7Config.Notify = {
@@ -117,6 +136,7 @@ Node7Config.Player.PlayerDefaults = {
     },
     metadata = {
         health = 600,
+        blood = 100,
         hunger = 100,
         thirst = 100,
         cleanliness = 100,
@@ -152,7 +172,7 @@ Node7Config.Server.WhitelistPermission = 'admin'           -- Permission that's 
 Node7Config.Server.PVP = true                              -- Enable or disable pvp on the server (Ability to shoot other players)
 Node7Config.Server.Discord = ''                            -- Discord invite link
 Node7Config.Server.CheckDuplicateLicense = true            -- Check for duplicate rockstar license on join
-Node7Config.Server.Permissions = { 'god', 'admin', 'mod' } -- Add as many groups as you want here after creating them in your server.cfg
+Node7Config.Server.Permissions = { 'owner', 'god', 'admin', 'moderator', 'mod', 'staff' } -- Add as many groups as you want here after creating them in your server.cfg
 Node7Config.Server.VersionCheck = false                 -- Keep false unless you host your own NODE7 version endpoint
 
 Node7Config.Commands = {}                                  -- Command Configuration

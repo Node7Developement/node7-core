@@ -1,3 +1,13 @@
+## 2.5.0-node7.5
+
+- Moved cash, bank, gold, and blood-money ownership fully into node7-core persistence.
+- Disabled and unloaded inventory-backed currency without changing node7-inventory.
+- Added validated give, set, and remove money commands with exact ACE permissions.
+- Added persistent blood type and blood-level metadata plus exports and an admin command.
+- Added the compact NODE7 top-left account and blood-type display.
+- Removed runtime add_ace execution to prevent console access-denied errors.
+- Added immediate database persistence for successful money changes.
+
 ## 2.4.0-node7.4
 - Fixed notification NUI transparency and removed the inactive full-screen black canvas/flash.
 - NUI body remains hidden until a notification is actively displayed.

@@ -1,6 +1,6 @@
 # node7-core
 
-NODE7's RedM core rebuilt around the supplied QBCore 1.3.0 object, callback, player, command, and export conventions. RedM item, weapon, job, gang, vehicle, location, keybind, money-item, database, notification, recipe, and manifest behavior remains NODE7-native.
+NODE7's RedM core with core-owned cash, bank, gold, blood-money, character metadata, ACE-protected administration, inventory compatibility, and a compact top-left account display.
 
 ## Core access
 
@@ -31,7 +31,7 @@ NODE7 RedM framework core built in the same resource format as `node7-core`, wit
 ensure ox_lib
 ensure oxmysql
 ensure node7-core
-ensure node7-inventory # required when cash is configured as inventory items
+ensure node7-inventory # inventory remains separate from core-owned currency
 ```
 
 ## Main export
@@ -57,20 +57,9 @@ This core does not require horses, spawnselect, charselect, clothing, or menu-ba
 
 ## Money accounts
 
-`cash` is backed by the `dollar` and `cent` inventory items when `Node7Config.Money.EnableMoneyItems` is enabled. `bank` remains a persistent character balance in the players table. The legacy account names `valbank`, `rhobank`, `blkbank`, and `armbank` resolve to `bank` for compatibility.
+`cash`, `bank`, `gold`, and legacy `bloodmoney` are persistent balances owned by `node7-core`. Currency is not represented by inventory items and the core status display shows cash, bank, gold, and blood type.
 
 ```lua
-local Node7Core = exports['node7-core']:GetCoreObject()
-local Player = Node7Core.Functions.GetPlayer(source)
-
-local cash = Player.Functions.GetMoney('cash')
-local bank = Player.Functions.GetMoney('bank')
-
-local deposited = Player.Functions.RemoveMoney('cash', 25.00, 'Bank deposit')
-if deposited then
-    Player.Functions.AddMoney('bank', 25.00, 'Bank deposit')
-end
-```
 
 Server exports are also available: `GetMoney`, `AddMoney`, `RemoveMoney`, and `SetMoney`.
 
@@ -134,3 +123,14 @@ Node7Core.Functions.Notify({
 Notification defaults, type titles, images, durations, and sounds are configured under `Node7Config.Notify`.
 
 Run `/node7notifytest` in game to display the reference-style `ALERT!!` card with sound.
+
+## Administration
+
+- `/givemoney [id] [cash|bank|gold|bloodmoney] [amount] [reason]`
+- `/setmoney [id] [cash|bank|gold|bloodmoney] [amount] [reason]`
+- `/removemoney [id] [cash|bank|gold|bloodmoney] [amount] [reason]`
+- `/setbloodtype [id] [A+|A-|B+|B-|AB+|AB-|O+|O-]`
+- `/balances`
+- `/togglemoneyhud`
+
+Use `recipe/permissions.cfg` for the exact ACE rules.

@@ -403,8 +403,19 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.SetMetaData(meta, val)
         local function validateData(key, value)
-            if key == 'hunger' or key == 'thirst' or key == 'cleanliness' then
-                value = lib.math.clamp(value, 0, 100)
+            if key == 'hunger' or key == 'thirst' or key == 'cleanliness' or key == 'stress' or key == 'blood' then
+                value = lib.math.clamp(tonumber(value) or 0, 0, 100)
+            elseif key == 'bloodtype' then
+                local requested = tostring(value or ''):upper()
+                local valid = false
+                for _, bloodType in ipairs(Node7Core.Config.Player.Bloodtypes or {}) do
+                    if requested == bloodType then
+                        valid = true
+                        break
+                    end
+                end
+                if not valid then return self.PlayerData.metadata.bloodtype end
+                value = requested
             end
 
             return value
@@ -426,6 +437,26 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
     function self.Functions.GetMetaData(meta)
         if not meta or type(meta) ~= 'string' then return end
         return self.PlayerData.metadata[meta]
+    end
+
+    function self.Functions.SetBloodType(bloodType)
+        local requested = tostring(bloodType or ''):upper()
+        for _, validType in ipairs(Node7Core.Config.Player.Bloodtypes or {}) do
+            if requested == validType then
+                self.PlayerData.metadata.bloodtype = requested
+                if not self.Offline then
+                    Player(self.PlayerData.source).state:set('bloodtype', requested, true)
+                end
+                self.Functions.UpdatePlayerData('metadata.bloodtype', requested)
+                if not self.Offline then Node7Core.Player.Save(self.PlayerData.source) end
+                return true, requested
+            end
+        end
+        return false, 'invalid_blood_type'
+    end
+
+    function self.Functions.GetBloodType()
+        return self.PlayerData.metadata and self.PlayerData.metadata.bloodtype or nil
     end
 
     function self.Functions.AddRep(rep, amount)
@@ -474,6 +505,7 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
+            if Node7Core.Config.Money.SaveImmediately then Node7Core.Player.Save(self.PlayerData.source) end
             TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', ('**%s (citizenid: %s | id: %s)** $%.2f (%s) added, new balance: $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, value, account, newBalance, reason), value > 100000)
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, value, false)
             TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, account, value, 'add', reason)
@@ -508,6 +540,7 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
+            if Node7Core.Config.Money.SaveImmediately then Node7Core.Player.Save(self.PlayerData.source) end
             TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', ('**%s (citizenid: %s | id: %s)** $%.2f (%s) removed, new balance: $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, value, account, newBalance, reason), value > 100000)
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, value, true)
             TriggerClientEvent('Node7Core:Client:OnMoneyChange', self.PlayerData.source, account, value, 'remove', reason)
@@ -541,6 +574,7 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
         if not self.Offline then
             self.Functions.UpdatePlayerData()
+            if Node7Core.Config.Money.SaveImmediately then Node7Core.Player.Save(self.PlayerData.source) end
             TriggerEvent('node7-log:server:CreateLog', 'playermoney', 'SetMoney', 'green', ('**%s (citizenid: %s | id: %s)** %s set to $%.2f reason: %s'):format(GetPlayerName(self.PlayerData.source), self.PlayerData.citizenid, self.PlayerData.source, account, newBalance, reason))
             if difference ~= 0 then
                 TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, account, math.abs(difference), difference < 0)
@@ -591,7 +625,7 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.PersistStateBags()
         local metadata = {}
-        local keys = { "hunger", "thirst", "cleanliness", "stress", "health" }
+        local keys = { "hunger", "thirst", "cleanliness", "stress", "health", "blood", "bloodtype" }
     
         local state = Player(self.PlayerData.source).state
         for _, key in ipairs(keys) do
@@ -607,7 +641,7 @@ function Node7Core.Player.CreatePlayer(PlayerData, Offline)
 
     function self.Functions.InitializeStateBags()
         local metadata = self.PlayerData.metadata
-        local keys = { "hunger", "thirst", "cleanliness", "stress", "health" }
+        local keys = { "hunger", "thirst", "cleanliness", "stress", "health", "blood", "bloodtype" }
     
         local state = Player(self.PlayerData.source).state
         for _, key in ipairs(keys) do

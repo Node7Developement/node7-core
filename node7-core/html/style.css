@@ -47,8 +47,8 @@ body::after {
     position: fixed;
     background: transparent !important;
     background-color: rgba(0, 0, 0, 0) !important;
-    top: 10.5vh;
-    left: 3.2vw;
+    top: 18.5vh;
+    left: 2.2vw;
     width: min(34vw, 560px);
     display: flex;
     flex-direction: column;
@@ -204,4 +204,107 @@ body::after {
         width: min(48vw, 520px);
         left: 2.6vw;
     }
+}
+
+
+/* NODE7 core-owned character account display. No inventory UI dependency. */
+.status-hud {
+    position: fixed;
+    top: 2.2vh;
+    left: 1.7vw;
+    width: min(300px, 24vw);
+    padding: 12px 18px 13px 16px;
+    opacity: 0;
+    transform: translateX(-18px);
+    transition: opacity 180ms ease, transform 180ms ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .58));
+    z-index: 999998;
+}
+
+.status-hud.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.status-hud::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(5, 7, 5, .88), rgba(5, 7, 5, .72) 78%, transparent);
+    border-left: 2px solid rgba(111, 149, 109, .9);
+    clip-path: polygon(0 0, 93% 3%, 100% 14%, 96% 49%, 100% 86%, 90% 97%, 0 100%);
+}
+
+.status-hud__brand {
+    color: #dcebd7;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+
+.status-hud__name {
+    margin-top: 2px;
+    color: rgba(245, 240, 232, .82);
+    font-size: 13px;
+    letter-spacing: .04em;
+}
+
+.status-hud__accounts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 9px;
+}
+
+.status-account {
+    min-width: 0;
+    padding: 5px 7px 6px;
+    border-top: 1px solid rgba(111, 149, 109, .42);
+    background: rgba(255, 255, 255, .025);
+}
+
+.status-account span,
+.status-hud__blood span {
+    display: block;
+    color: rgba(222, 215, 204, .66);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .14em;
+}
+
+.status-account strong {
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    color: #e8eee4;
+    font-size: 14px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-account--gold strong { color: #ead3a4; }
+.status-account--bank strong { color: #d7e4d4; }
+
+.status-hud__blood {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(111, 149, 109, .24);
+}
+
+.status-hud__blood strong {
+    color: #f1d6d1;
+    font-size: 13px;
+    letter-spacing: .08em;
+}
+
+@media (max-width: 1100px) {
+    .status-hud { width: min(290px, 34vw); }
+    .notifications { top: 19vh; }
 }

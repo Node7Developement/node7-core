@@ -5,14 +5,6 @@ Node7Core.Commands.IgnoreList = { -- Ignore old perm levels while keeping backwa
     ['user'] = true            -- We don't need to create an ace because builtin.everyone
 }
 
-CreateThread(function() -- Add ace to node for perm checking
-    local permissions = Node7Core.Config.Server.Permissions
-    for i = 1, #permissions do
-        local permission = permissions[i]
-        ExecuteCommand(('add_ace rsgcore.%s %s allow'):format(permission, permission))
-    end
-end)
-
 -- Register & Refresh Commands
 
 function Node7Core.Commands.Add(name, help, arguments, argsrequired, callback, permission, ...)
@@ -33,21 +25,16 @@ function Node7Core.Commands.Add(name, help, arguments, argsrequired, callback, p
 
     local extraPerms = ... and table.pack(...) or nil
     if extraPerms then
-        extraPerms[extraPerms.n + 1] = permission -- The `n` field is the number of arguments in the packed table
+        extraPerms[extraPerms.n + 1] = permission
         extraPerms.n += 1
         permission = extraPerms
-        for i = 1, permission.n do
-            if not Node7Core.Commands.IgnoreList[permission[i]] then -- only create aces for extra perm levels
-                ExecuteCommand(('add_ace rsgcore.%s command.%s allow'):format(permission[i], name))
-            end
-        end
         permission.n = nil
     else
         permission = tostring(permission:lower())
-        if not Node7Core.Commands.IgnoreList[permission] then -- only create aces for extra perm levels
-            ExecuteCommand(('add_ace rsgcore.%s command.%s allow'):format(permission, name))
-        end
     end
+
+    -- ACEs are intentionally declared in server.cfg/recipe/permissions.cfg.
+    -- Resources must not execute add_ace during runtime.
 
     Node7Core.Commands.List[name:lower()] = {
         name = name:lower(),
@@ -65,7 +52,7 @@ function Node7Core.Commands.Refresh(source)
     local suggestions = {}
     if Player then
         for command, info in pairs(Node7Core.Commands.List) do
-            local hasPerm = IsPlayerAceAllowed(tostring(src), 'command.' .. command)
+            local hasPerm = info.permission == 'user' or IsPlayerAceAllowed(tostring(src), 'command.' .. command)
             if hasPerm then
                 suggestions[#suggestions + 1] = {
                     name = '/' .. command,
@@ -223,32 +210,149 @@ end, 'admin')
 
 -- Money
 
-Node7Core.Commands.Add('givemoney', Lang:t('command.givemoney.help'), { { name = Lang:t('command.givemoney.params.id.name'), help = Lang:t('command.givemoney.params.id.help') }, { name = Lang:t('command.givemoney.params.moneytype.name'), help = Lang:t('command.givemoney.params.moneytype.help') }, { name = Lang:t('command.givemoney.params.amount.name'), help = Lang:t('command.givemoney.params.amount.help') } }, true, function(source, args)
-    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
-    if Player then
-        local success, result = Player.Functions.AddMoney(tostring(args[2]), tonumber(args[3]), 'Admin give money')
-        if success then
-            Node7Core.Functions.Notify(source, { title = 'Money Updated', description = ('$%.2f added to %s. New balance: $%.2f'):format(tonumber(args[3]) or 0, tostring(args[2]), tonumber(result) or 0), type = 'success', duration = 5000 })
-        else
-            Node7Core.Functions.Notify(source, { title = 'Money Update Failed', description = tostring(result or 'Unable to add money.'), type = 'error', duration = 5000 })
-        end
-    else
-        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
+local validAdminMoneyAccounts = {
+    cash = true,
+    bank = true,
+    gold = true,
+    bloodmoney = true,
+}
+
+local function adminMoneyAccount(value)
+    local account = tostring(value or ''):lower()
+    account = (Node7Core.Config.Money.AccountAliases or {})[account] or account
+    if not validAdminMoneyAccounts[account] or Node7Core.Config.Money.MoneyTypes[account] == nil then
+        return nil
     end
+    return account
+end
+
+local function adminMoneyAmount(value, allowZero)
+    local amount = tonumber(value)
+    if not amount or amount ~= amount or amount == math.huge or amount == -math.huge then return nil end
+    amount = tonumber(string.format('%.2f', amount))
+    if amount < 0 or (not allowZero and amount == 0) then return nil end
+    if amount > (tonumber(Node7Core.Config.Money.MaxTransactionAmount) or 100000000) then return nil end
+    return amount
+end
+
+local function commandReason(args, firstIndex, fallback)
+    if #args < firstIndex then return fallback end
+    local reason = table.concat(args, ' ', firstIndex)
+    reason = reason:gsub('^%s+', ''):gsub('%s+$', '')
+    return reason ~= '' and reason or fallback
+end
+
+local function moneyCommandFailure(source, description)
+    Node7Core.Functions.Notify(source, {
+        title = 'MONEY COMMAND FAILED',
+        description = description,
+        type = 'error',
+        duration = 6000,
+    })
+end
+
+local function moneyCommandSuccess(source, target, action, account, amount, balance)
+    local targetName = target.Functions.GetName()
+    Node7Core.Functions.Notify(source, {
+        title = 'MONEY UPDATED',
+        description = ('%s %s %.2f for %s. Balance: %.2f'):format(action, account:upper(), amount, targetName, balance),
+        type = 'success',
+        duration = 6000,
+    })
+
+    if source ~= target.PlayerData.source then
+        Node7Core.Functions.Notify(target.PlayerData.source, {
+            title = 'ACCOUNT UPDATED',
+            description = ('Your %s balance is now %.2f.'):format(account:upper(), balance),
+            type = 'money',
+            duration = 6000,
+        })
+    end
+end
+
+Node7Core.Commands.Add('givemoney', 'Give money to an online character.', {
+    { name = 'id', help = 'Player server ID' },
+    { name = 'account', help = 'cash, bank, gold, or bloodmoney' },
+    { name = 'amount', help = 'Amount greater than zero' },
+}, true, function(source, args)
+    local target = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    local account = adminMoneyAccount(args[2])
+    local amount = adminMoneyAmount(args[3], false)
+    if not target then return moneyCommandFailure(source, 'That player is not online.') end
+    if not account then return moneyCommandFailure(source, 'Use cash, bank, gold, or bloodmoney.') end
+    if not amount then return moneyCommandFailure(source, 'Enter a valid positive amount.') end
+
+    local reason = commandReason(args, 4, ('Admin give by %s'):format(source))
+    local success, balance = target.Functions.AddMoney(account, amount, reason)
+    if not success then return moneyCommandFailure(source, tostring(balance or 'Unable to add money.')) end
+    moneyCommandSuccess(source, target, 'Gave', account, amount, balance)
 end, 'admin')
 
-Node7Core.Commands.Add('setmoney', Lang:t('command.setmoney.help'), { { name = Lang:t('command.setmoney.params.id.name'), help = Lang:t('command.setmoney.params.id.help') }, { name = Lang:t('command.setmoney.params.moneytype.name'), help = Lang:t('command.setmoney.params.moneytype.help') }, { name = Lang:t('command.setmoney.params.amount.name'), help = Lang:t('command.setmoney.params.amount.help') } }, true, function(source, args)
-    local Player = Node7Core.Functions.GetPlayer(tonumber(args[1]))
-    if Player then
-        local success, result = Player.Functions.SetMoney(tostring(args[2]), tonumber(args[3]), 'Admin set money')
-        if success then
-            Node7Core.Functions.Notify(source, { title = 'Money Updated', description = ('%s set to $%.2f.'):format(tostring(args[2]), tonumber(result) or 0), type = 'success', duration = 5000 })
-        else
-            Node7Core.Functions.Notify(source, { title = 'Money Update Failed', description = tostring(result or 'Unable to set money.'), type = 'error', duration = 5000 })
-        end
-    else
-        Node7Core.Functions.Notify(source, {title = Lang:t('error.not_online'), type = 'error', duration = 5000 })
-    end
+Node7Core.Commands.Add('setmoney', 'Set an online character account balance.', {
+    { name = 'id', help = 'Player server ID' },
+    { name = 'account', help = 'cash, bank, gold, or bloodmoney' },
+    { name = 'amount', help = 'New balance, including zero' },
+}, true, function(source, args)
+    local target = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    local account = adminMoneyAccount(args[2])
+    local amount = adminMoneyAmount(args[3], true)
+    if not target then return moneyCommandFailure(source, 'That player is not online.') end
+    if not account then return moneyCommandFailure(source, 'Use cash, bank, gold, or bloodmoney.') end
+    if amount == nil then return moneyCommandFailure(source, 'Enter a valid balance of zero or greater.') end
+
+    local reason = commandReason(args, 4, ('Admin set by %s'):format(source))
+    local success, balance = target.Functions.SetMoney(account, amount, reason)
+    if not success then return moneyCommandFailure(source, tostring(balance or 'Unable to set money.')) end
+    moneyCommandSuccess(source, target, 'Set', account, amount, balance)
+end, 'admin')
+
+Node7Core.Commands.Add('removemoney', 'Remove money from an online character.', {
+    { name = 'id', help = 'Player server ID' },
+    { name = 'account', help = 'cash, bank, gold, or bloodmoney' },
+    { name = 'amount', help = 'Amount greater than zero' },
+}, true, function(source, args)
+    local target = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    local account = adminMoneyAccount(args[2])
+    local amount = adminMoneyAmount(args[3], false)
+    if not target then return moneyCommandFailure(source, 'That player is not online.') end
+    if not account then return moneyCommandFailure(source, 'Use cash, bank, gold, or bloodmoney.') end
+    if not amount then return moneyCommandFailure(source, 'Enter a valid positive amount.') end
+
+    local reason = commandReason(args, 4, ('Admin remove by %s'):format(source))
+    local success, balance = target.Functions.RemoveMoney(account, amount, reason)
+    if not success then return moneyCommandFailure(source, tostring(balance or 'Unable to remove money.')) end
+    moneyCommandSuccess(source, target, 'Removed', account, amount, balance)
+end, 'admin')
+
+Node7Core.Commands.Add('balances', 'View your NODE7 account balances.', {}, false, function(source)
+    local player = Node7Core.Functions.GetPlayer(source)
+    if not player then return end
+    Node7Core.Functions.Notify(source, {
+        title = 'ACCOUNT BALANCES',
+        description = ('Cash: $%.2f | Bank: $%.2f | Gold: %.2f'):format(
+            player.Functions.GetMoney('cash'),
+            player.Functions.GetMoney('bank'),
+            player.Functions.GetMoney('gold')
+        ),
+        type = 'money',
+        duration = 8000,
+    })
+end, 'user')
+
+Node7Core.Commands.Add('setbloodtype', 'Set an online character blood type.', {
+    { name = 'id', help = 'Player server ID' },
+    { name = 'bloodtype', help = 'A+, A-, B+, B-, AB+, AB-, O+, or O-' },
+}, true, function(source, args)
+    local target = Node7Core.Functions.GetPlayer(tonumber(args[1]))
+    if not target then return moneyCommandFailure(source, 'That player is not online.') end
+    local success, bloodType = target.Functions.SetBloodType(args[2])
+    if not success then return moneyCommandFailure(source, 'Invalid blood type.') end
+    Node7Core.Functions.Notify(source, {
+        title = 'BLOOD TYPE UPDATED',
+        description = ('%s is now %s.'):format(target.Functions.GetName(), bloodType),
+        type = 'success',
+        duration = 6000,
+    })
 end, 'admin')
 
 -- Job

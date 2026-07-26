@@ -4,12 +4,20 @@
     const container = document.getElementById('notifications');
     const template = document.getElementById('notification-template');
     const active = new Map();
+    const statusHud = document.getElementById('status-hud');
+    const statusName = document.getElementById('status-name');
+    const statusCash = document.getElementById('status-cash');
+    const statusBank = document.getElementById('status-bank');
+    const statusGold = document.getElementById('status-gold');
+    const statusBloodWrap = document.getElementById('status-blood-wrap');
+    const statusBloodType = document.getElementById('status-bloodtype');
+    let statusVisible = false;
     let nextId = 1;
 
     const syncNuiVisibility = () => {
         document.documentElement.style.background = 'transparent';
         document.body.style.background = 'transparent';
-        document.body.classList.toggle('nui-active', active.size > 0);
+        document.body.classList.toggle('nui-active', active.size > 0 || statusVisible);
     };
 
     const safeText = (value, fallback = '') => {
@@ -34,6 +42,35 @@
         return ['info', 'success', 'error', 'warning', 'money', 'alert'].includes(normalized)
             ? normalized
             : 'info';
+    };
+
+
+    const formatMoney = (value, currency = true) => {
+        const number = Number(value);
+        const formatted = Number.isFinite(number)
+            ? number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '0.00';
+        return currency ? `$${formatted}` : formatted;
+    };
+
+    const updateStatus = (payload = {}) => {
+        const status = payload.status || {};
+        statusVisible = payload.visible !== false;
+        statusHud.classList.toggle('is-visible', statusVisible);
+        statusCash.textContent = formatMoney(status.cash, true);
+        statusBank.textContent = formatMoney(status.bank, true);
+        statusGold.textContent = formatMoney(status.gold, false);
+        statusBloodType.textContent = safeText(status.bloodtype, '--').toUpperCase();
+        statusName.textContent = safeText(status.name, '');
+        statusName.hidden = status.showName === false || statusName.textContent === '';
+        statusBloodWrap.hidden = status.showBloodType === false;
+        syncNuiVisibility();
+    };
+
+    const hideStatus = () => {
+        statusVisible = false;
+        statusHud.classList.remove('is-visible');
+        syncNuiVisibility();
     };
 
     const removeNotification = (id) => {
@@ -128,6 +165,17 @@
                 break;
             case 'clear':
                 clearAll();
+                break;
+            case 'status:update':
+                updateStatus(data);
+                break;
+            case 'status:show':
+                statusVisible = true;
+                statusHud.classList.add('is-visible');
+                syncNuiVisibility();
+                break;
+            case 'status:hide':
+                hideStatus();
                 break;
             default:
                 break;

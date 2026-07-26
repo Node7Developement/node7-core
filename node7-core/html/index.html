@@ -17,6 +17,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <aside id="status-hud" class="status-hud" aria-label="Character status">
+        <div class="status-hud__brand">NODE7 LABS</div>
+        <div id="status-name" class="status-hud__name"></div>
+        <div class="status-hud__accounts">
+            <div class="status-account status-account--cash"><span>CASH</span><strong id="status-cash">$0.00</strong></div>
+            <div class="status-account status-account--bank"><span>BANK</span><strong id="status-bank">$0.00</strong></div>
+            <div class="status-account status-account--gold"><span>GOLD</span><strong id="status-gold">0.00</strong></div>
+        </div>
+        <div id="status-blood-wrap" class="status-hud__blood"><span>BLOOD TYPE</span><strong id="status-bloodtype">--</strong></div>
+    </aside>
     <main id="notifications" class="notifications" aria-live="polite" aria-atomic="false"></main>
     <template id="notification-template">
         <section class="notification" role="status">

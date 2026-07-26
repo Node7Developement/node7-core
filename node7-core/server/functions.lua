@@ -567,14 +567,30 @@ end
 
 -- Setting & Removing Permissions
 
+local permissionGroupAliases = {
+    owner = 'group.node7_owner',
+    god = 'group.node7_owner',
+    admin = 'group.node7_admin',
+    moderator = 'group.node7_moderator',
+    mod = 'group.node7_moderator',
+    staff = 'group.node7_staff',
+}
+
+local function resolvePermissionGroup(permission)
+    return permissionGroupAliases[tostring(permission or ''):lower()]
+end
+
 ---Add permission for player
 ---@param source any
 ---@param permission string
 function Node7Core.Functions.AddPermission(source, permission)
-    if not IsPlayerAceAllowed(source, permission) then
-        ExecuteCommand(('add_principal player.%s rsgcore.%s'):format(source, permission))
+    local group = resolvePermissionGroup(permission)
+    if not group then return false, 'invalid_permission' end
+    if not Node7Core.Functions.HasPermission(source, permission) then
+        ExecuteCommand(('add_principal player.%s %s'):format(source, group))
         Node7Core.Commands.Refresh(source)
     end
+    return true
 end
 
 ---Remove permission from player
@@ -582,18 +598,25 @@ end
 ---@param permission string
 function Node7Core.Functions.RemovePermission(source, permission)
     if permission then
-        if IsPlayerAceAllowed(source, permission) then
-            ExecuteCommand(('remove_principal player.%s rsgcore.%s'):format(source, permission))
+        local group = resolvePermissionGroup(permission)
+        if not group then return false, 'invalid_permission' end
+        if Node7Core.Functions.HasPermission(source, permission) then
+            ExecuteCommand(('remove_principal player.%s %s'):format(source, group))
             Node7Core.Commands.Refresh(source)
         end
-    else
-        for _, v in pairs(Node7Core.Config.Server.Permissions) do
-            if IsPlayerAceAllowed(source, v) then
-                ExecuteCommand(('remove_principal player.%s rsgcore.%s'):format(source, v))
-                Node7Core.Commands.Refresh(source)
-            end
+        return true
+    end
+
+    local removed = {}
+    for _, v in pairs(Node7Core.Config.Server.Permissions) do
+        local group = resolvePermissionGroup(v)
+        if group and not removed[group] and Node7Core.Functions.HasPermission(source, v) then
+            ExecuteCommand(('remove_principal player.%s %s'):format(source, group))
+            removed[group] = true
         end
     end
+    Node7Core.Commands.Refresh(source)
+    return true
 end
 
 -- Checking for Permission Level
@@ -603,11 +626,19 @@ end
 ---@param permission string
 ---@return boolean
 function Node7Core.Functions.HasPermission(source, permission)
+    local function has(permissionName)
+        permissionName = tostring(permissionName or ''):lower()
+        if permissionName == '' then return false end
+        return IsPlayerAceAllowed(source, permissionName)
+            or IsPlayerAceAllowed(source, ('node7.%s'):format(permissionName))
+            or IsPlayerAceAllowed(source, ('rsgcore.%s'):format(permissionName))
+    end
+
     if type(permission) == 'string' then
-        if IsPlayerAceAllowed(source, permission) then return true end
+        return has(permission)
     elseif type(permission) == 'table' then
         for _, permLevel in pairs(permission) do
-            if IsPlayerAceAllowed(source, permLevel) then return true end
+            if has(permLevel) then return true end
         end
     end
 
@@ -621,7 +652,7 @@ function Node7Core.Functions.GetPermission(source)
     local src = source
     local perms = {}
     for _, v in pairs(Node7Core.Config.Server.Permissions) do
-        if IsPlayerAceAllowed(src, v) then
+        if Node7Core.Functions.HasPermission(src, v) then
             perms[v] = true
         end
     end
@@ -662,6 +693,24 @@ function Node7Core.Functions.IsPlayerBanned(source)
         MySQL.query('DELETE FROM bans WHERE id = ?', { result.id })
     end
     return false
+end
+
+---Get an online character's blood type.
+---@param source number
+---@return string?
+function Node7Core.Functions.GetBloodType(source)
+    local player = Node7Core.Functions.GetPlayer(source)
+    return player and player.Functions.GetBloodType() or nil
+end
+
+---Set an online character's blood type.
+---@param source number
+---@param bloodType string
+---@return boolean, string
+function Node7Core.Functions.SetBloodType(source, bloodType)
+    local player = Node7Core.Functions.GetPlayer(source)
+    if not player then return false, 'player_not_found' end
+    return player.Functions.SetBloodType(bloodType)
 end
 
 -- Retrieves information about the database connection.
