@@ -2,13 +2,15 @@ Node7Core = Node7Core or {}
 Node7Core.Config = Node7Core.Config or {}
 Node7Config = Node7Core.Config
 
+
 Node7Config.MaxPlayers = GetConvarInt('sv_maxclients', 48) -- Gets max players from config file, default 48
 Node7Config.DefaultSpawn = vector4(-325.29, 766.24, 117.48, 90.0)
 Node7Config.UpdateInterval = 5                             -- how often to save player data in database in minutes
 Node7Config.HidePlayerNames = true
 
+
 Node7Config.Money = {}
-Node7Config.Money.MoneyTypes = { cash = 50.00, bank = 0.00, gold = 0.00, bloodmoney = 0.00 } -- Core-owned persistent character accounts.
+Node7Config.Money.MoneyTypes = { cash = 50.00, bank = 0.00, gold = 0.00, bloodmoney = 0.00, casino_chip = 0.00, bounty_voucher = 0.00, prison_token = 0.00, saloon_token = 0.00,} -- Core-owned persistent character accounts.
 Node7Config.Money.AccountAliases = {
     money = 'cash',
     wallet = 'cash',
@@ -26,7 +28,8 @@ Node7Config.Money.MinusLimit = -5000
 Node7Config.Money.MaxTransactionAmount = 100000000
 Node7Config.Money.SaveImmediately = true
 Node7Config.Money.PayCheckTimeOut = 10
-Node7Config.Money.PayCheckSociety = false
+Node7Config.Money.PayCheckSociety = true
+
 
 Node7Config.Money.PhysicalCash = {
     Enabled = true,
@@ -36,11 +39,13 @@ Node7Config.Money.PhysicalCash = {
 }
 
 
+
 Node7Config.UI = {
     HideDuringPauseMenu = true, -- Hides every NODE7 core-owned UI surface in RedM's native pause menu.
     PauseMenuPollMs = 0, -- Poll every frame so native pause-menu transitions cannot leak the HUD.
     PauseMenuHeartbeatMs = 100,
 }
+
 
 Node7Config.StatusHUD = {
     Enabled = false,
@@ -49,6 +54,7 @@ Node7Config.StatusHUD = {
     ShowCharacterName = true,
     ShowBloodType = true,
 }
+
 
 
 Node7Config.Notify = {
@@ -102,10 +108,12 @@ Node7Config.Notify = {
     },
 }
 
+
 Node7Config.Player = {}
 Node7Config.Player.Bloodtypes = {
     'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
 }
+
 
 Node7Config.Player.PlayerDefaults = {
     citizenid = function() return Node7Core.Player.CreateCitizenId() end,
@@ -176,6 +184,7 @@ Node7Config.Player.PlayerDefaults = {
     slots = 25,
 }
 
+
 Node7Config.Server = {}                                    -- General server config
 Node7Config.Server.Closed = false                          -- Set server closed (no one can join except people with ace permission 'node7admin.join')
 Node7Config.Server.ClosedReason = 'Server Closed'          -- Reason message to display when people can't join the server
@@ -186,10 +195,12 @@ Node7Config.Server.PVP = true                              -- Enable or disable 
 Node7Config.Server.Discord = ''                            -- Discord invite link
 Node7Config.Server.CheckDuplicateLicense = true            -- Check for duplicate rockstar license on join
 Node7Config.Server.Permissions = { 'owner', 'god', 'admin', 'moderator', 'mod', 'staff' } -- Add as many groups as you want here after creating them in your server.cfg
-Node7Config.Server.VersionCheck = false                 -- Keep false unless you host your own NODE7 version endpoint
+Node7Config.Server.VersionCheck = false                    -- Keep false unless you host your own NODE7 version endpoint
+
 
 Node7Config.Commands = {}                                  -- Command Configuration
 Node7Config.Commands.OOCColor = { 255, 151, 133 }          -- RGB color code for the OOC command
+
 
 Node7Config.PromptDistance = 1.5
 Node7Config.Player.RevealMap = true

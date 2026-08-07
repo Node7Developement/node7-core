@@ -52,7 +52,19 @@ Node7Shared.Items = {
     birdpost = { name = 'birdpost', label = 'Bird Post', weight = 5, type = 'item', image = 'birdpost.png', unique = false, useable = true, shouldClose = true, description = 'Bird Post for sending letters' },
     -- Physical NODE7 currency
     cash = { name = 'cash', label = 'Cash', weight = 0, type = 'item', image = 'cash.png', unique = false, useable = false, shouldClose = false, description = 'Physical cash carried by the character. Movable, droppable, and synchronized with the NODE7 cash account.' },
-
+    gold = { name = 'gold', label = 'Gold Bar', weight = 0, type = 'item', image = 'gold.png', unique = false, useable = false, shouldClose = false, description = 'A physical gold bar representing one whole unit of the NODE7 gold balance.' },
+    cash_hundred = { name = 'cash_hundred', label = 'One Hundred Dollar Bill', weight = 0, type = 'item', image = 'cash_hundred.png', unique = false, useable = false, shouldClose = false, description = 'A physical one-hundred-dollar bill.' },
+    cash_fifty = { name = 'cash_fifty', label = 'Fifty Dollar Bill', weight = 0, type = 'item', image = 'cash_fifty.png', unique = false, useable = false, shouldClose = false, description = 'A physical fifty-dollar bill.' },
+    cash_twenty = { name = 'cash_twenty', label = 'Twenty Dollar Bill', weight = 0, type = 'item', image = 'cash_twenty.png', unique = false, useable = false, shouldClose = false, description = 'A physical twenty-dollar bill.' },
+    cash_ten = { name = 'cash_ten', label = 'Ten Dollar Bill', weight = 0, type = 'item', image = 'cash_ten.png', unique = false, useable = false, shouldClose = false, description = 'A physical ten-dollar bill.' },
+    cash_five = { name = 'cash_five', label = 'Five Dollar Bill', weight = 0, type = 'item', image = 'cash_five.png', unique = false, useable = false, shouldClose = false, description = 'A physical five-dollar bill.' },
+    cash_quarter = { name = 'cash_quarter', label = 'Quarter', weight = 0, type = 'item', image = 'cash_quarter.png', unique = false, useable = false, shouldClose = false, description = 'A physical twenty-five-cent coin.' },
+    cash_dime = { name = 'cash_dime', label = 'Dime', weight = 0, type = 'item', image = 'cash_dime.png', unique = false, useable = false, shouldClose = false, description = 'A physical ten-cent coin.' },
+    cash_nickel = { name = 'cash_nickel', label = 'Nickel', weight = 0, type = 'item', image = 'cash_nickel.png', unique = false, useable = false, shouldClose = false, description = 'A physical five-cent coin.' },
+    cash_penny = { name = 'cash_penny', label = 'Penny', weight = 0, type = 'item', image = 'cash_penny.png', unique = false, useable = false, shouldClose = false, description = 'A physical one-cent coin.' },
+    outlaw_mark = { name = 'outlaw_mark', label = 'Outlaw Mark', weight = 0, type = 'item', image = 'outlaw_mark.png', unique = false, useable = false, shouldClose = false, description = 'A black-market token accepted by criminal traders and fences.' },
+    company_scrip = { name = 'company_scrip', label = 'Company Scrip', weight = 0, type = 'item', image = 'company_scrip.png', unique = false, useable = false, shouldClose = false, description = 'Company-issued scrip accepted by approved work camps and company stores.' },
+    
     -- Money Clip
     money_clip       = { name = 'money_clip',       label = 'Money Clip',       weight = 1, type = 'item', image = 'money_clip.png',       unique = true, useable = true, shouldClose = true, description = 'Money Clip' },
     blood_money_clip = { name = 'blood_money_clip', label = 'Blood Money Clip', weight = 1, type = 'item', image = 'blood_money_clip.png', unique = true, useable = true, shouldClose = true, description = 'Blood Money Clip' },
@@ -400,5 +412,16 @@ Node7Shared.Items = {
     small_game_carcass = { name = 'small_game_carcass', label = 'Small Game Carcass', weight = 100, type = 'item', image = 'small_game_carcass.png', unique = false, useable = true, decay = 180, delete = true, shouldClose = true, description = 'Unprocessed small-game carcass' },
     bird_carcass      = { name = 'bird_carcass',      label = 'Bird Carcass',      weight = 100, type = 'item', image = 'bird_carcass.png',      unique = false, useable = true, decay = 180, delete = true, shouldClose = true, description = 'Unprocessed bird carcass' },
     rabbit_carcass    = { name = 'rabbit_carcass',    label = 'Rabbit Carcass',    weight = 100, type = 'item', image = 'rabbit_carcass.png',    unique = false, useable = true, decay = 180, delete = true, shouldClose = true, description = 'Unprocessed rabbit carcass' },
+
+
+
+    --- Node7 Housing
+    property_key = { name = 'property_key', label = 'Property Key', weight = 25, type = 'item', image = 'property_key.png', unique = true, useable = true, shouldClose = true, description = 'Physical key for a Node7 property.' },
+
+    
+    --- Radio Item
+    radio      = { name = 'radio',      label = 'Field Radio',   weight = 500, type = 'item', image = 'radio.png',      unique = true,  useable = true, shouldClose = true, description = 'Portable NODE7 frequency radio' },
+
+
 
 }

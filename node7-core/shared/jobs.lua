@@ -232,4 +232,18 @@ Node7Shared.Jobs = {
         },
     },
 
+    realestate = {
+        name = 'realestate',
+        label = 'Real Estate Office',
+        type = 'realestate',
+        defaultDuty = false,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Agent', payment = 8 },
+            ['1'] = { name = 'Property Agent', payment = 18 },
+            ['2'] = { name = 'Senior Agent', payment = 32 },
+            ['3'] = { name = 'Broker', isboss = true, payment = 55 },
+        },
+    },
+
 }
